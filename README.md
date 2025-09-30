@@ -1,7 +1,7 @@
   fl<div>
   <!--Header-->
- ![header](https://capsule-render.vercel.app/api?type=blur&color=gradient&height=300&section=header&text=back-end%20developer%20kimgunwoo)
- ![header](https://capsule-render.vercel.app/api?type=blur&color=gradient&height=300&section=header&text=back-end%20developer%20kimgunwoo)
+ ![header](https://capsule-render.vercel.app/api?type=blur&color=gradient&height=300&section=header&text=back-end%20developer)
+ ![header](https://capsule-render.vercel.app/api?type=blur&color=gradient&height=300&section=header&text=kimgunwoo)
   
 </div>
 
