@@ -25,7 +25,16 @@
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=HTML5&logoColor=white"/>
   <!--CSS-->
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=CSS3&logoColor=white"/>
+  <!--git-->
+  <img src="https://img.shields.io/badge/git-F05032?style=flat-square&logo=git&logoColor=white"/>
+  <!--github-->
+  <img src="https://img.shields.io/badge/github-181717?style=flat-square&logo=github&logoColor=white"/>
+  <!--CSS-->
+  <img src="https://img.shields.io/badge/linux-FCC624?style=flat-square&logo=linux&logoColor=white"/>
+  <!--linux-->
+  <img src="https://img.shields.io/badge/linux-FCC624?style=flat-square&logo=linux&logoColor=white"/>
   <br/>
+  
   
   ### Framework
   <!--Flask-->
@@ -35,8 +44,18 @@
 
   
   ### ETC
-  <!--Amazon AWS-->
-  <img src="https://img.shields.io/badge/sketchup-#005F9Estyle=flat-square&logo=sketchup&logoColor=white"/>
+  <!--sketchup-->
+  <img src="https://img.shields.io/badge/sketchup-005F9E?style=flat-square&logo=sketchup&logoColor=white"/>
+  <!--autocad-->
+  <img src="https://img.shields.io/badge/autocad-E51050?style=flat-square&logo=autocad&logoColor=white"/>
+  <!--3dmax-->
+  <img src="https://img.shields.io/badge/3dmax-0E353D?style=flat-square&logo=3dmax&logoColor=white"/>
+  <!--photoshop-->
+  <img src="https://img.shields.io/badge/photoshop-0D2192?style=flat-square&logo=photoshop&logoColor=white"/>
+  <!--illustration-->
+  <img src="https://img.shields.io/badge/illustration-D77310?style=flat-square&logo=illustration&logoColor=white"/>
+  <!--D5render-->
+  <img src="https://img.shields.io/badge/D5render-311C87?style=flat-square&logo=D5render&logoColor=white"/>
   <br/>
   <br/>
   
