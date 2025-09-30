@@ -14,11 +14,12 @@
   초보 개발자로서 부족한 부분이 많지만 끊임없이 배우고 성장하려는 태도 그리고 팀과 함께 문제를 해결하고자 하는 협업 정신으로 <br/>
   발전해 나가고자 합니다. 저의 목표는 단순히 코드를 작성하는 것을 넘어 안정적이고 신뢰할 수 있는 서비스를 만드는 백엔드 개발자가 되는것입니다.<br/>
   
-  #### :mortar_board: ...
+  ####
+:kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr::kr:
   <br/>
   <br/>
   
-  ## 🧱 Tech Stack
+  ## :computer: Tech Stack
   ### Language
   <!--Python-->
   <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=Python&logoColor=white"/>
