@@ -70,6 +70,10 @@
   <br/>
   
   ## 🤔 Github Stats
+
+  업데이트중...
+
+  
   [!['s GitHub stats](https://github-readme-stats.vercel.app/api?username=)](https://github.com/anuraghazra/github-readme-stats)
   <br/>
   [![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=)](https://github.com/anuraghazra/github-readme-stats)
