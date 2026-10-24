@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0b120e">
+<meta name="theme-color" content="#07090c">
 <title>SwingLab</title>
 <style>
-:root{--bg:#0b120e;--card:#141f19;--line:#233229;--txt:#e9f2ec;--dim:#8da398;--acc:#3ddc84;--warn:#ffb020;--red:#ff4d4d}
+:root{--bg:#07090c;--card:#10151b;--line:#1f2832;--txt:#eef2f6;--dim:#8794a3;--acc:#4fd1c5;--warn:#e6b450;--red:#ff5a5a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;-webkit-text-size-adjust:100%;touch-action:manipulation;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overscroll-behavior:none}
+html,body{margin:0;height:100%;background-image:radial-gradient(1100px 520px at 50% -8%,#10202a 0%,#07090c 62%);background-attachment:fixed;-webkit-text-size-adjust:100%;touch-action:manipulation;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overscroll-behavior:none}
 .screen{display:none;position:fixed;inset:0;overflow-x:hidden;overflow-y:auto;max-width:100vw;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 .screen.active{display:flex;flex-direction:column}
 h1{font-size:28px;margin:28px 20px 4px}
 .sub{color:var(--dim);margin:0 20px 18px;font-size:14px;line-height:1.5}
 .btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:14px 16px;font-size:16px;font-weight:600;text-align:left;width:100%}
 .btn small{display:block;color:var(--dim);font-weight:400;margin-top:3px;font-size:12.5px}
-.btn.pri{background:var(--acc);color:#05200f;border-color:var(--acc)}
-.btn.pri small{color:#0d4a26}
+.btn.pri{background:var(--acc);color:#031a18;border-color:var(--acc)}
+.btn.pri small{color:#0b4a44}
 .btn:active{transform:scale(.98)}
 .col{display:flex;flex-direction:column;gap:10px;padding:0 20px}
 .row{display:flex;gap:8px;align-items:center}
 .chip{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:999px;padding:9px 13px;font-size:14px;font-weight:600;white-space:nowrap}
-.chip.on{background:var(--acc);color:#05200f;border-color:var(--acc)}
+.chip.on{background:var(--acc);color:#031a18;border-color:var(--acc)}
 .chip.sm{padding:6px 10px;font-size:12.5px}
 input[type=text],input[type=tel],select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px;font-size:16px}
 .tips{margin:18px 20px;padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--dim);font-size:13px;line-height:1.6}
@@ -59,7 +59,7 @@ input[type=text],input[type=tel],select{background:var(--card);border:1px solid 
 .ctl input[type=range]{width:100%;accent-color:var(--acc)}
 .tl{display:flex;justify-content:space-between;color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums}
 .scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;align-items:center}
-.play{width:56px;height:56px;border-radius:50%;border:none;background:var(--acc);color:#05200f;font-size:22px;font-weight:800;flex:none}
+.play{width:56px;height:56px;border-radius:50%;border:none;background:var(--acc);color:#031a18;font-size:22px;font-weight:800;flex:none}
 .sq{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:16px;flex:none}
 .res{margin:6px 14px 20px;display:flex;flex-direction:column;gap:10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -73,13 +73,36 @@ input[type=text],input[type=tel],select{background:var(--card);border:1px solid 
 .status{font-size:13px;color:var(--dim);text-align:center}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:99;display:none;max-width:88%;text-align:center}
 label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim)}
+
+.pane{border:1px solid var(--line);box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.pane .lab{letter-spacing:1.4px;font-size:10.5px;font-weight:600;text-transform:uppercase;border:1px solid var(--line)}
+.panes{padding:0 12px;gap:8px}
+.panes.single #pB{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;overflow:hidden}
+.panes.single #pA{max-height:62vh}
+.phase{position:absolute;right:8px;top:8px;z-index:2;font-size:10.5px;letter-spacing:1.6px;font-weight:600;padding:4px 9px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--line);display:none}
+.phase.hot{border-color:var(--acc);color:var(--acc)}
+.stagemsg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(0,0,0,.7);backdrop-filter:blur(6px);padding:7px 14px;border-radius:999px;font-size:12.5px;letter-spacing:.6px;z-index:3;display:none;white-space:nowrap}
+.ticks{position:relative;height:20px;margin:0 6px}
+.ticks span{position:absolute;bottom:0;transform:translateX(-50%);font-size:9.5px;letter-spacing:1px;color:var(--dim);text-align:center}
+.ticks span::after{content:'';display:block;width:1px;height:5px;background:var(--acc);margin:2px auto 0}
+.hud{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tile{background:linear-gradient(180deg,#131b23,#0c1116);padding:12px 6px 10px;text-align:center}
+.tile .v{font-size:30px;font-weight:300;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .u{font-size:13px;color:var(--dim);margin-left:2px;font-weight:400}
+.tile .l{font-size:10px;letter-spacing:1.5px;color:var(--acc);margin-top:6px;font-weight:600}
+.tile .k{font-size:11px;color:var(--dim);margin-top:2px}
+.tile .d{font-size:11.5px;margin-top:4px;color:var(--dim);font-variant-numeric:tabular-nums}
+.hudhead{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 8px;font-size:11px;letter-spacing:1.6px;color:var(--dim)}
+.hudhead b{color:var(--txt);font-weight:600}
+.tempo{margin:8px 2px 0;font-size:12.5px;color:var(--dim);text-align:center}
+.res{margin:10px 12px}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <h1>⛳ SwingLab</h1>
+  <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="envWarn" style="display:none;border-color:var(--warn);color:var(--txt);margin-top:0">⚠️ <b>이 화면에서는 카메라와 폰 간 연결이 막혀 있어요.</b><br>앱 안의 미리보기가 아니라, <b>Safari/Chrome 주소창에서 이 페이지 주소를 직접 열어야</b> 동작해요. (HTTPS 주소로 호스팅 필요)</div>
   <div class="col">
@@ -112,6 +135,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
       <div class="bigcode" id="bigCode">----</div>
       <span class="pill bad" id="monStatus">촬영폰 대기 중…</span>
       <div style="margin-top:12px"><button class="chip" id="monRetry" style="display:none">🔄 다시 접속</button></div>
+      <div class="status" id="awakeStat" style="margin-top:10px"></div>
     </div>
     <div class="row">
       <select id="monDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
@@ -148,51 +172,59 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   </div>
 </section>
 
-<!-- 리뷰 -->
+<!-- 리뷰 (스윙 모니터) -->
 <section id="review" class="screen">
   <div class="bar">
     <button class="chip sm" id="rBack">← 대기</button>
-    <h2 id="rTitle">스윙 분석</h2>
+    <h2 id="rTitle">SWING</h2>
     <button class="chip sm" id="bSave">저장</button>
   </div>
-  <div class="panes" id="panes">
+  <div class="panes single" id="panes">
     <div class="pane" id="pA">
-      <span class="lab" id="labA">이번 스윙</span><video id="vA" playsinline muted></video><canvas id="cA"></canvas>
+      <span class="lab" id="labA">이번 스윙</span><span class="phase" id="phA"></span>
+      <video id="vA" playsinline muted></video><canvas id="cA"></canvas>
+      <div class="stagemsg" id="stageMsg"></div>
       <div class="empty" id="eA">영상 없음<button class="chip sm" data-pick="A">영상 선택</button></div>
     </div>
     <div class="pane" id="pB">
-      <span class="lab" id="labB">이전 스윙</span><video id="vB" playsinline muted></video><canvas id="cB"></canvas>
+      <span class="lab" id="labB">이전 스윙</span><span class="phase" id="phB"></span>
+      <video id="vB" playsinline muted></video><canvas id="cB"></canvas>
       <div class="empty" id="eB">비교할 영상 없음<button class="chip sm" data-pick="B">영상 선택</button></div>
     </div>
   </div>
+  <div class="prog" id="prog" style="display:none;margin:8px 12px 0"><i></i></div>
   <div class="ctl">
-    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <div class="ticks" id="ticks"></div>
+    <input type="range" id="scrub" min="0" max="1000" value="0" style="margin-top:-2px">
     <div class="tl"><span id="tNow">0.00s</span><span id="tInfo"></span><span id="tEnd">0.00s</span></div>
-    <div class="row" style="justify-content:center;gap:12px">
+    <div class="row" style="justify-content:center;gap:14px">
       <button class="sq" id="bPrev">◀︎</button>
       <button class="play" id="bPlay">▶</button>
       <button class="sq" id="bNext">▶︎</button>
     </div>
-    <div class="scroll" id="speeds">
+    <div class="scroll" id="speeds" style="justify-content:center">
       <button class="chip sm" data-sp="0.1">0.1x</button>
       <button class="chip sm" data-sp="0.25">0.25x</button>
-      <button class="chip sm on" data-sp="0.5">0.5x</button>
-      <button class="chip sm" data-sp="1">1x</button>
+      <button class="chip sm" data-sp="0.5">0.5x</button>
+      <button class="chip sm on" data-sp="1">1x</button>
       <select id="stepFps" style="padding:6px 8px;font-size:13px"><option value="30">프레임 30</option><option value="60">프레임 60</option><option value="120">프레임 120</option><option value="240">프레임 240</option></select>
     </div>
+  </div>
+  <div class="res" id="res"></div>
+  <div class="ctl">
     <div class="scroll">
       <button class="chip sm on" id="tLoop">반복 재생</button>
       <button class="chip sm on" id="tSkel">뼈대 표시</button>
-      <button class="chip sm" id="bAlignImp">임팩트 기준 정렬</button>
+      <button class="chip sm" id="tCmp">이전 스윙 비교</button>
+      <button class="chip sm" id="bAlignImp">임팩트 정렬</button>
       <button class="chip sm" id="bAlignOff">정렬 해제</button>
     </div>
     <div class="row">
       <label class="chk"><input type="checkbox" id="lefty"> 왼손잡이</label>
-      <button class="btn pri" id="bAnalyze" style="text-align:center;padding:12px">🧠 자세 분석 다시 실행</button>
+      <button class="btn" id="bAnalyze" style="text-align:center;padding:11px;font-size:14px">🧠 자세 분석 다시 실행</button>
     </div>
-    <div class="prog" id="prog" style="display:none"><i></i></div>
   </div>
-  <div class="res" id="res"></div>
+  <div style="height:24px"></div>
   <input type="file" id="filePick" accept="video/*" style="display:none">
 </section>
 
@@ -207,6 +239,39 @@ const S={role:'solo',peer:null,conn:null,stream:null,facing:'environment',rec:nu
 const H=[]; // 스윙 기록 (확인폰/단독)
 window.addEventListener('unhandledrejection',e=>toast('오류: '+((e.reason&&e.reason.message)||e.reason),5000));
 window.addEventListener('error',e=>toast('오류: '+e.message,5000));
+
+/* ---------- 화면 꺼짐 방지 ---------- */
+let wl=null,nosleep=null;S.awake='';
+function awakeUI(){
+  const el=$('#awakeStat');if(!el)return;
+  el.textContent=S.awake==='wl'?'🔆 화면 꺼짐 방지 켜짐':S.awake==='video'?'🔆 화면 꺼짐 방지 켜짐 (보조 방식)':'⚠️ 자동 꺼짐 방지를 못 켰어요 · 설정 > 화면 및 밝기 > 자동 잠금 "안 함"';
+}
+function startNoSleep(){
+  if(nosleep)return;
+  try{
+    const c=document.createElement('canvas');c.width=c.height=16;const ctx=c.getContext('2d');
+    if(!c.captureStream)return;
+    const v=document.createElement('video');v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');
+    v.style.cssText='position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.02;pointer-events:none';
+    v.srcObject=c.captureStream(2);document.body.appendChild(v);
+    setInterval(()=>{ctx.fillStyle=Math.random()<.5?'#000':'#010101';ctx.fillRect(0,0,16,16);},500);
+    v.play().then(()=>{nosleep=v;S.awake='video';awakeUI();}).catch(()=>{});
+  }catch(e){}
+}
+async function keepAwake(){
+  if(wl&&!wl.released)return;
+  try{
+    if(navigator.wakeLock){
+      wl=await navigator.wakeLock.request('screen');S.awake='wl';
+      wl.addEventListener('release',()=>{S.awake=nosleep?'video':'';awakeUI();});
+      awakeUI();return;
+    }
+  }catch(e){}
+  startNoSleep();awakeUI();
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')keepAwake();});
+['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(!(wl&&!wl.released))keepAwake();},{passive:true}));
+keepAwake();
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));}
 function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',ms);}
@@ -435,9 +500,9 @@ function renderHist(){
 const SL={A:{key:'A',video:$('#vA'),cv:$('#cA'),empty:$('#eA'),clip:null,dur:0,frames:null,m:null},
           B:{key:'B',video:$('#vB'),cv:$('#cB'),empty:$('#eB'),clip:null,dur:0,frames:null,m:null}};
 const LABEL={A:'이번 스윙',B:'이전 스윙'};
-let T=0,playing=false,speed=.5,align=0,lastTs=0,skel=true,loop=true,pickTarget=null,lm=null,analyzing=false;
+let T=0,playing=false,speed=1,align=0,lastTs=0,skel=true,loop=true,compare=false,pickTarget=null,lm=null,analyzing=false;
 const stepFps=()=>+$('#stepFps').value;
-const Tmax=()=>Math.max(SL.A.clip?SL.A.dur:0,SL.B.clip?SL.B.dur+align:0,0.01);
+const Tmax=()=>Math.max(SL.A.clip?SL.A.dur:0,(SL.B.clip&&compare)?SL.B.dur+align:0,0.01);
 const slotT=s=>s.key==='A'?T:T-align;
 
 async function fixDur(v){
@@ -458,14 +523,15 @@ async function loadSlot(key,clip){
 function layoutPanes(){$('#panes').classList.toggle('single',false);}
 async function openReview(a,b,opts={}){
   show('review');closeCamera();
+  speed=1;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===1));setCompare(!!opts.compare);
   playing=false;$('#bPlay').textContent='▶';T=0;align=0;$('#res').innerHTML='';
-  $('#rTitle').textContent=a&&a.n?`스윙 #${a.n}`:'스윙 분석';
+  $('#rTitle').textContent=a&&a.n?`SWING #${a.n}`:'SWING ANALYSIS';
   for(const k of['A','B']){const s=SL[k];s.clip=null;s.dur=0;s.frames=null;s.m=null;s.video.pause();s.video.removeAttribute('src');s.video.load();s.empty.style.display='flex';}
   if(a)await loadSlot('A',a);
   if(b)await loadSlot('B',b);
   autoAlign();seekAll();updateUI();renderResults();
   if(opts.auto){
-    speed=.5;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===.5));
+    speed=1;
     runAnalysis(false,true);
   }
 }
@@ -473,7 +539,7 @@ function autoAlign(){
   if(SL.A.m&&SL.B.m)align=SL.A.m.tImp-SL.B.m.tImp;else align=0;
 }
 function seekAll(){
-  for(const k of['A','B']){const s=SL[k];if(!s.clip)continue;const t=slotT(s);s.video.pause();s.video.currentTime=Math.min(Math.max(t,0),s.dur);}
+  for(const k of['A','B']){const s=SL[k];if(!s.clip||(k==='B'&&!compare))continue;const t=slotT(s);s.video.pause();s.video.currentTime=Math.min(Math.max(t,0),s.dur);}
 }
 function setPlaying(p){
   playing=p;$('#bPlay').textContent=p?'❚❚':'▶';
@@ -494,7 +560,7 @@ function sizeCv(s){
 }
 const CONN=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 function drawOverlay(s){
-  sizeCv(s);const cv=s.cv,ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  sizeCv(s);const cv=s.cv,ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);updatePhase(s);
   if(!skel||!s.frames||!s.frames.length||!s.clip)return;
   const t=s.video.currentTime;
   let lo=0,hi=s.frames.length-1;
@@ -507,7 +573,7 @@ function drawOverlay(s){
   const lead=$('#lefty').checked?[12,14,16]:[11,13,15];
   for(const [a,b] of CONN){
     const isLead=lead.includes(a)&&lead.includes(b);
-    ctx.strokeStyle=isLead?'#ffb020':'#3ddc84';
+    ctx.strokeStyle=isLead?'#e6b450':'#4fd1c5';
     const [x1,y1]=P(a),[x2,y2]=P(b);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
   }
   ctx.fillStyle='#fff';
@@ -520,7 +586,7 @@ function tick(ts){
       if(loop){T=0;seekAll();}
       else{T=Tmax();setPlaying(false);}
     }else for(const k of['A','B']){
-      const s=SL[k];if(!s.clip)continue;const t=slotT(s);
+      const s=SL[k];if(!s.clip||(k==='B'&&!compare))continue;const t=slotT(s);
       if(t>=0&&t<=s.dur){
         if(s.video.paused){s.video.currentTime=t;s.video.play().catch(()=>{});}
         else if(Math.abs(s.video.currentTime-t)>0.12)s.video.currentTime=t;
@@ -545,6 +611,7 @@ $('#speeds').addEventListener('click',e=>{
 });
 $('#tSkel').onclick=e=>{skel=!skel;e.target.classList.toggle('on',skel);};
 $('#tLoop').onclick=e=>{loop=!loop;e.target.classList.toggle('on',loop);};
+$('#tCmp').onclick=()=>setCompare(!compare);
 $('#bAlignOff').onclick=()=>{align=0;seekAll();updateUI();toast('정렬을 해제했어요');};
 $('#bAlignImp').onclick=()=>{
   const a=SL.A.m,b=SL.B.m;
@@ -559,6 +626,7 @@ $('#filePick').onchange=async e=>{
   const f=e.target.files[0];if(!f||!pickTarget)return;
   const clip={blob:f,url:URL.createObjectURL(f),mime:f.type,dur:0,fps:0,frames:null,m:null};
   await loadSlot(pickTarget,clip);
+  if(pickTarget==='B'&&!compare)setCompare(true);
   align=0;seekAll();updateUI();
 };
 $('#bSave').onclick=()=>{
@@ -649,11 +717,60 @@ function card(key,m){
   <div class="row" style="margin-top:10px"><button class="chip sm" data-jump="${key}:tAd">어드레스</button><button class="chip sm" data-jump="${key}:tTop">탑</button><button class="chip sm" data-jump="${key}:tImp">임팩트</button></div>
   </div>`;
 }
+function setCompare(on){
+  compare=!!on;
+  $('#panes').classList.toggle('single',!compare);
+  $('#tCmp').classList.toggle('on',compare);
+  if(playing)setPlaying(false);
+  seekAll();updateUI();renderTicks();
+}
+function renderTicks(){
+  const el=$('#ticks');el.innerHTML='';
+  const m=SL.A.m;if(!m)return;
+  const mx=Tmax();
+  [['ADDRESS',m.tAd],['TOP',m.tTop],['IMPACT',m.tImp]].forEach(([n,t])=>{
+    const s=document.createElement('span');s.textContent=n;s.style.left=Math.min(97,Math.max(3,t/mx*100))+'%';el.appendChild(s);
+  });
+}
+function updatePhase(s){
+  const el=$('#ph'+s.key);if(!el)return;
+  if(!s.clip||!s.m||(s.key==='B'&&!compare)){el.style.display='none';return;}
+  const m=s.m,t=s.video.currentTime;let n;
+  if(t<m.tStart)n='ADDRESS';else if(t<m.tTop-0.03)n='BACKSWING';else if(t<m.tTop+0.05)n='TOP';else if(t<m.tImp-0.04)n='DOWNSWING';else if(t<m.tImp+0.06)n='IMPACT';else n='FOLLOW-THROUGH';
+  el.textContent=n;el.style.display='block';el.classList.toggle('hot',n==='IMPACT'||n==='TOP');
+}
 function renderResults(){
-  let html='';
-  for(const k of['A','B']){const s=SL[k];if(s.clip&&s.frames)html+=card(k,s.m);}
-  if(html)html+=`<div class="note">※ 카메라 한 대 기준의 추정값이에요. 촬영 각도·옷·조명에 따라 오차가 있어요. 같은 각도·거리에서 찍은 스윙끼리 비교할 때 가장 유용합니다.</div>`;
+  const A=SL.A,B=SL.B;let html='';
+  if(A.clip&&A.frames){
+    if(!A.m){
+      html='<div class="card"><div class="note" style="margin:0">스윙 동작을 찾지 못했어요. 전신이 보이고 밝은 곳에서 다시 촬영해 보세요.</div></div>';
+    }else{
+      const a=A.m,b=(B.clip&&B.m)?B.m:null;
+      const T6=[
+        ['TEMPO','템포 (백:다운)',a=>a.ratio,1,':1'],
+        ['SHOULDER','어깨 회전',a=>a.sTurn,0,'°'],
+        ['HIP','골반 회전',a=>a.hTurn,0,'°'],
+        ['X-FACTOR','어깨-골반 차',a=>a.xf,0,'°'],
+        ['LEAD ARM','리드 팔 (탑)',a=>a.armTop,0,'°'],
+        ['HEAD','머리 이동 (임팩트)',a=>Math.abs(a.swayImp),0,'%'],
+        ['BACKSWING','백스윙 시간',a=>a.back,2,'s'],
+        ['DOWNSWING','다운스윙 시간',a=>a.down,2,'s'],
+        ['SPINE','상체 기울기 변화',a=>a.spChg,0,'°']
+      ];
+      const tiles=T6.map(([en,ko,f,dec,u])=>{
+        const v=f(a);
+        let d='';if(b){const x=v-f(b);d=`<div class="d">${x>=0?'+':'−'}${Math.abs(x).toFixed(dec)}${u==':1'?'':u}</div>`;}
+        return `<div class="tile"><div class="v">${v.toFixed(dec)}<span class="u">${u}</span></div><div class="l">${en}</div><div class="k">${ko}</div>${d}</div>`;
+      }).join('');
+      const r=a.ratio;
+      const tempo=r>=2.6&&r<=3.5?'<span class="good">템포 이상적 · 3:1 근처</span>':r<2.6?'백스윙이 짧거나 다운스윙이 느린 편이에요':'백스윙이 느리거나 다운스윙이 빠른 편이에요';
+      html=`<div class="hudhead"><b>SWING DATA</b><span>${b?'이전 스윙 대비 증감':'추정값'}</span></div><div class="hud">${tiles}</div><div class="tempo">${tempo}</div>
+      <div class="row" style="margin-top:12px;justify-content:center"><button class="chip sm" data-jump="A:tAd">ADDRESS</button><button class="chip sm" data-jump="A:tTop">TOP</button><button class="chip sm" data-jump="A:tImp">IMPACT</button></div>
+      <div class="note" style="text-align:center">※ 카메라 한 대 기준의 추정값이에요. 같은 각도·거리에서 찍은 스윙끼리 비교할 때 가장 유용해요.</div>`;
+    }
+  }
   $('#res').innerHTML=html;
+  renderTicks();
 }
 $('#res').addEventListener('click',e=>{
   const b=e.target.closest('[data-jump]');if(!b)return;
@@ -673,13 +790,13 @@ async function runAnalysis(force,auto){
     for(let i=0;i<targets.length;i++){
       const k=targets[i],s=SL[k];
       btn.textContent=`${LABEL[k]} 분석 중…`;
-      s.m=await analyzeSlot(s,p=>{bar.style.width=((i+p)/targets.length*100)+'%';});
+      s.m=await analyzeSlot(s,p=>{const pc=(i+p)/targets.length*100;bar.style.width=pc+'%';const sm=$('#stageMsg');sm.style.display='block';sm.textContent='AI 자세 분석 중 '+Math.round(pc)+'%';});
       s.clip.frames=s.frames;s.clip.m=s.m;
     }
     autoAlign();renderResults();renderHist();seekAll();updateUI();
     if(auto)setPlaying(true);
   }catch(e){toast('분석 실패: '+(e.message||e),5000);}
-  pg.style.display='none';bar.style.width='0';
+  pg.style.display='none';bar.style.width='0';$('#stageMsg').style.display='none';
   analyzing=false;btn.disabled=false;btn.textContent='🧠 자세 분석 다시 실행';
 }
 $('#bAnalyze').onclick=()=>{
@@ -699,8 +816,8 @@ $('#bJoinGo').onclick=async()=>{
   await enterCam('cam');
 };
 $('#bSolo').onclick=()=>enterCam('solo');
-$('#bImport').onclick=()=>{S.role='solo';openReview(null,null);};
-$('#bMonImport').onclick=()=>openReview(null,null);
+$('#bImport').onclick=()=>{S.role='solo';openReview(null,null,{compare:true});};
+$('#bMonImport').onclick=()=>openReview(null,null,{compare:true});
 $('#monBack').onclick=leaveAll;
 $('#bRemote').onclick=()=>{
   if(!connected()){toast('촬영폰이 아직 연결되지 않았어요');return;}
