@@ -211,13 +211,15 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #fring{position:fixed;width:74px;height:74px;margin:-37px 0 0 -37px;border:2px solid #ffd54a;border-radius:16px;pointer-events:none;z-index:30;opacity:0;transition:opacity .15s,transform .25s}
 #fring.show{opacity:1;transform:scale(1)}
 #fring.pre{transform:scale(1.5)}
+#lvRecInd{background:rgba(0,0,0,.55)!important;color:var(--txt)!important;border:1px solid var(--line)!important;font-weight:600!important;padding:0 12px!important;border-radius:var(--r)!important}
+#lvRecInd #lvTimer{font-weight:600;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v21</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v22</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -308,7 +310,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
     <span class="pill ok">● LIVE</span>
     <span class="pill" id="lvInfo">촬영폰</span>
     <button class="chip sm" id="lvFit">▣ 꽉 채우기</button>
-    <span class="pill rec" id="lvRecInd" style="display:none">● REC <span id="lvTimer">0:00</span></span>
+    <span class="pill rec" id="lvRecInd" style="display:none"><span style="color:var(--red)">●</span> REC <span id="lvTimer">0:00</span></span>
   </div>
   <div id="lvCount"></div>
   <div class="stack">
@@ -803,6 +805,8 @@ function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style
 function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
 function goLive(){
   show('live');
+  const lv=$('#liveVideo');const fix=()=>{forceFull();try{const st=lv.srcObject;if(st){lv.srcObject=null;lv.srcObject=st;}lv.play().catch(()=>{});}catch(e){}};
+  forceFull();requestAnimationFrame(()=>{forceFull();});[80,300,900,2000].forEach(t=>setTimeout(forceFull,t));setTimeout(fix,120);
   if(!$('#liveVideo').srcObject)lvMsg('📡 촬영폰 화면 불러오는 중…');
   clearTimeout(S.lvHint);
   S.lvHint=setTimeout(()=>{if(!$('#liveVideo').srcObject&&$('#live').classList.contains('active'))lvMsg('영상이 아직 안 들어와요\n두 폰이 같은 Wi-Fi인지 확인해 주세요');},10000);
