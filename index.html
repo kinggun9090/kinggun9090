@@ -297,13 +297,25 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #modeBar button{padding:0 9px}
 #modeBar{width:max-content;max-width:calc(100vw - 32px)}
 #modeBar button{white-space:nowrap;flex:none;min-width:0;writing-mode:horizontal-tb}
+
+/* ======== v30: 줌 드래그 / 뷰티 ======== */
+#fxCv{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;pointer-events:none;display:none;background:#000}
+#cam #preview{position:absolute!important}
+#zoomHud{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 300px);z-index:7;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.55);border:var(--bd);border-radius:var(--r);height:var(--ctl);padding:0 14px;display:flex;align-items:center;font-size:var(--fs);font-weight:700;color:var(--acc);pointer-events:none}
+#fxPanel{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 262px);z-index:7;display:none;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border:var(--bd);border-radius:var(--r);padding:10px 12px}
+#fxPanel .fxrow{display:flex;align-items:center;gap:10px;font-size:var(--fs);font-weight:600;margin-bottom:8px}
+#fxPanel .fxrow input{flex:1;accent-color:var(--acc)}
+#fxPanel .fxrow b{width:28px;text-align:right;color:var(--acc);font-weight:700}
+#fxPanel .fxchips{display:flex;gap:6px;overflow-x:auto}
+#fxPanel .fxchips .chip{flex:1 0 auto;height:30px!important;min-height:30px!important;font-size:12px!important;padding:0 10px!important}
+#fxPanel .fxchips .chip.on{background:var(--acc)!important;color:#031a18!important}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v29</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v30</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -360,6 +372,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 <!-- 카메라 -->
 <section id="cam" class="screen">
   <video id="preview" playsinline muted autoplay></video>
+  <canvas id="fxCv"></canvas>
   <div class="top">
     <span class="pill" id="pillRole"></span>
     <span class="pill" id="pillConn"></span>
@@ -372,10 +385,16 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
   <div class="toolcol">
     <button class="tb" id="tbGrid" aria-label="격자">▦</button>
     <button class="tb on" id="tbLevel" aria-label="수평선">⎯</button>
+    <button class="tb" id="tbFx" aria-label="뷰티 필터">✨</button>
     <button class="tb" id="tbTorch" aria-label="손전등" style="display:none">🔦</button>
     <button class="tb" id="tbExp" aria-label="밝기" style="display:none">☀︎</button>
   </div>
   <div id="expWrap"><input type="range" id="expRange" min="-2" max="2" step="0.1" value="0"></div>
+  <div id="zoomHud"></div>
+  <div id="fxPanel">
+    <div class="fxrow"><span>보정</span><input type="range" id="fxBeauty" min="0" max="100" step="5" value="0"><b id="fxBeautyV">0</b></div>
+    <div class="fxchips" id="fxChips"><button class="chip on" data-f="none">원본</button><button class="chip" data-f="pure">뽀얀</button><button class="chip" data-f="warm">화사</button><button class="chip" data-f="cool">청량</button><button class="chip" data-f="film">필름</button><button class="chip" data-f="mono">흑백</button></div>
+  </div>
   <div class="zoomrow" id="zoomRow"><button class="chip" data-z="0.5">.5</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2</button><button class="chip" data-z="3">3</button></div>
   <div class="stack">
     <div class="msg" id="camMsg"></div>
@@ -927,7 +946,7 @@ function onData(d){
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
   else if(d.type==='focus'){if(S.role==='cam'){const v=$('#preview');const r=v.getBoundingClientRect();ring(r.left+d.x*r.width,r.top+d.y*r.height);focusAt(d.x,d.y);}}
-  else if(d.type==='zoom'){const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-(d.label||d.z))<0.05));}
+  else if(d.type==='zoom'){S.rz=d.label||d.z||1;const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-(d.label||d.z))<0.05));}
   else if(d.type==='zoomset'){if(S.role==='cam')setZoom(d.z);}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
   else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){if(d.fps)$('#fpsSel').value=String(d.fps);if(d.res)$('#resSel').value=String(d.res);openCamera();}}
@@ -1532,8 +1551,29 @@ async function setZoom(z){
   S.zoom=z;S.swScale=z>1.001?z:1;$('#preview').style.transform=S.swScale>1?'scale('+z+')':'';
   paintZoom(z);sendZoom();
 }
-document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>setZoom(+b.dataset.z));
-document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});document.querySelectorAll('#lvZoom .chip').forEach(x=>x.classList.toggle('on',x===b));}});
+document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;setZoom(+b.dataset.z);});
+// 줌 드래그 (줌 바를 좌우로 밀기)
+(function(){
+  const row=$('#zoomRow'),hud=$('#zoomHud');let x0=0,z0=1,drag=false;
+  const show=z=>{hud.textContent=z.toFixed(1)+'x';hud.style.opacity='1';clearTimeout(show.h);show.h=setTimeout(()=>hud.style.opacity='0',900);};
+  row.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;z0=S.zoom||1;drag=false;},{passive:true});
+  row.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-x0;if(!drag&&Math.abs(dx)<8)return;drag=true;e.preventDefault();
+    let z=z0*Math.pow(2,dx/120);if(!S.hwZoom)z=Math.max(1,z);
+    setZoom(z);show(Math.min(S.zoomMax||4,Math.max(S.hwZoom?(S.zoomMin||0.5):1,z)));
+  },{passive:false});
+  row.addEventListener('touchend',()=>{if(drag){S.justDragged=true;setTimeout(()=>{S.justDragged=false;},350);}drag=false;},{passive:true});
+  // 확인폰 라이브 화면의 줌 바도 드래그 가능
+  const lr=$('#lvZoom');let lx=0,lz=1,ld=false,lt=0;
+  lr.addEventListener('touchstart',e=>{lx=e.touches[0].clientX;lz=S.rz||1;ld=false;},{passive:true});
+  lr.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-lx;if(!ld&&Math.abs(dx)<8)return;ld=true;e.preventDefault();
+    const z=Math.max(1,Math.min(6,lz*Math.pow(2,dx/120)));
+    if(performance.now()-lt>120&&connected()){lt=performance.now();S.conn.send({type:'zoomset',z});}
+  },{passive:false});
+  lr.addEventListener('touchend',()=>{if(ld){S.justDragged=true;setTimeout(()=>{S.justDragged=false;},350);}ld=false;},{passive:true});
+})();
+document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});document.querySelectorAll('#lvZoom .chip').forEach(x=>x.classList.toggle('on',x===b));}});
 // 핀치 줌
 (function(){
   const el=$('#cam');let d0=0,z0=1;
@@ -1587,7 +1627,7 @@ async function takePhoto(){
   const v=$('#preview');if(!S.stream||!v.videoWidth){toast('카메라가 아직 준비되지 않았어요');return;}
   const W=v.videoWidth,H=v.videoHeight,z=S.swScale>1.001?S.swScale:1;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
-  cv.getContext('2d').drawImage(v,(W-W/z)/2,(H-H/z)/2,W/z,H/z,0,0,W,H);
+  if(S.fxActive)cv.getContext('2d').drawImage($('#fxCv'),0,0,W,H);else cv.getContext('2d').drawImage(v,(W-W/z)/2,(H-H/z)/2,W/z,H/z,0,0,W,H);
   const f=$('#shotFlash');f.style.opacity='1';setTimeout(()=>{f.style.opacity='0';},90);beep(1500,.05);
   const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.95));
   if(!blob){toast('사진 저장 실패');return;}
@@ -1602,8 +1642,7 @@ async function setMode(m,init){
   document.querySelectorAll('#modeBar button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   $('#bRec').classList.toggle('photo',m==='photo');
   $('#durSel').style.visibility=$('#fpsSel').style.visibility=(m==='photo')?'hidden':'visible';
-  $('#cineOv').style.display=m==='cine'?'block':'none';$('#preview').classList.toggle('cine',m==='cine');
-  if(m==='cine')updateCineBars();
+  if(typeof updateFx==='function')updateFx();
   if(init||prev===m)return;
   let reopen=false;
   if(m==='slomo'){const o=[...$('#fpsSel').options].map(x=>+x.value);const best=Math.max(...o);if($('#fpsSel').value!==String(best)||$('#resSel').value!=='1080'){$('#fpsSel').value=String(best);$('#resSel').value='1080';reopen=true;}$('#durSel').value='5';}
@@ -1615,6 +1654,62 @@ document.querySelectorAll('#modeBar button').forEach(b=>b.onclick=()=>setMode(b.
 (function(){let m='video';try{m=localStorage.getItem('swinglab_mode')||'video';}catch(e){}if(m==='slomo')m='video';setMode(m,true);})();
 function updateCineBars(){const w=innerWidth,h=innerHeight,v=$('#preview');const land=v.videoWidth>v.videoHeight&&w>h;const bh=land?Math.max(0,(h-w/2.39)/2):0;$('#cbT').style.height=$('#cbB').style.height=bh+'px';}
 addEventListener('resize',updateCineBars);$('#preview').addEventListener('loadedmetadata',updateCineBars);
+
+/* ---------- 뷰티 / 필터 (스노우 스타일 보정) ---------- */
+S.beauty=0;S.fx='none';S.fxActive=false;
+try{S.beauty=+localStorage.getItem('swinglab_beauty')||0;S.fx=localStorage.getItem('swinglab_fx')||'none';}catch(e){}
+let fxSmall=null;
+function fxDraw(cx,W,H){
+  const v=$('#preview'),z=S.swScale>1.001?S.swScale:1;
+  cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
+  cx.drawImage(v,(W-W/z)/2,(H-H/z)/2,W/z,H/z,0,0,W,H);
+  if(S.beauty>0){
+    const k=S.beauty/100,sw=Math.max(2,Math.round(W/8)),sh=Math.max(2,Math.round(H/8));
+    const sc=fxSmall||(fxSmall=document.createElement('canvas'));if(sc.width!==sw||sc.height!==sh){sc.width=sw;sc.height=sh;}
+    sc.getContext('2d').drawImage(cx.canvas,0,0,W,H,0,0,sw,sh);
+    cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.globalAlpha=0.6*k;cx.drawImage(sc,0,0,sw,sh,0,0,W,H);cx.globalAlpha=1;           // 피부 부드럽게
+    cx.globalCompositeOperation='screen';cx.fillStyle='rgba(255,228,218,'+(0.16*k).toFixed(3)+')';cx.fillRect(0,0,W,H); // 밝게
+    cx.globalCompositeOperation='soft-light';cx.fillStyle='rgba(255,170,190,'+(0.24*k).toFixed(3)+')';cx.fillRect(0,0,W,H); // 혈색
+    cx.globalCompositeOperation='source-over';
+  }
+  const tint=(op,col)=>{cx.globalCompositeOperation=op;cx.fillStyle=col;cx.fillRect(0,0,W,H);cx.globalCompositeOperation='source-over';};
+  switch(S.fx){
+    case 'pure':tint('screen','rgba(255,240,236,.20)');tint('soft-light','rgba(255,190,205,.22)');break;
+    case 'warm':tint('overlay','rgba(255,160,90,.28)');tint('screen','rgba(255,220,190,.06)');break;
+    case 'cool':tint('overlay','rgba(90,150,255,.28)');break;
+    case 'film':tint('overlay','rgba(255,205,150,.22)');tint('source-over','rgba(20,35,60,.10)');break;
+    case 'mono':tint('saturation','#808080');break;
+  }
+  if(S.mode==='cine')cineGrade(cx,W,H);
+}
+function fxLoop(t){
+  if(!S.fxActive)return;
+  requestAnimationFrame(fxLoop);
+  if(t-(fxLoop.t||0)<30)return;fxLoop.t=t;
+  const v=$('#preview');if(!v.videoWidth)return;
+  const cv=$('#fxCv');
+  if(cv.width!==v.videoWidth||cv.height!==v.videoHeight){cv.width=v.videoWidth;cv.height=v.videoHeight;}
+  try{fxDraw(cv.getContext('2d'),cv.width,cv.height);}catch(e){}
+}
+function updateFx(){
+  const on=S.beauty>0||S.fx!=='none'||S.mode==='cine';
+  const was=S.fxActive;S.fxActive=on;
+  $('#fxCv').style.display=on?'block':'none';
+  $('#preview').style.opacity=on?'0':'1';
+  $('#cineOv').style.display='none';$('#preview').classList.remove('cine');
+  $('#tbFx').classList.toggle('on',S.beauty>0||S.fx!=='none');
+  if(on&&!was)requestAnimationFrame(fxLoop);
+}
+(function(){
+  const rng=$('#fxBeauty'),val=$('#fxBeautyV');
+  rng.value=S.beauty;val.textContent=S.beauty;
+  document.querySelectorAll('#fxChips .chip').forEach(b=>b.classList.toggle('on',b.dataset.f===S.fx));
+  rng.oninput=()=>{S.beauty=+rng.value;val.textContent=S.beauty;try{localStorage.setItem('swinglab_beauty',S.beauty);}catch(e){}updateFx();};
+  document.querySelectorAll('#fxChips .chip').forEach(b=>b.onclick=()=>{S.fx=b.dataset.f;try{localStorage.setItem('swinglab_fx',S.fx);}catch(e){}document.querySelectorAll('#fxChips .chip').forEach(x=>x.classList.toggle('on',x===b));updateFx();});
+  $('#tbFx').onclick=()=>{const p=$('#fxPanel');p.style.display=p.style.display==='block'?'none':'block';};
+  updateFx();
+})();
 // 소프트웨어 줌 녹화: 확대된 화면을 캔버스로 그려 녹화
 function cineGrade(cx,W,H){
   cx.save();
@@ -1630,7 +1725,8 @@ function cineGrade(cx,W,H){
 function makeRecStream(){
   const cine=S.mode==='cine',z=S.swScale>1.001?S.swScale:1;
   S.recFps=cine?24:null;
-  if(!cine&&z===1)return S.stream;
+  if(S.fxActive){const out=$('#fxCv').captureStream(cine?24:30);S.stream.getAudioTracks().forEach(a=>out.addTrack(a));S.recCleanup=null;return out;}
+  if(z===1)return S.stream;
   const v=$('#preview'),W=v.videoWidth,H=v.videoHeight;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');let run=true;
   (function d(){if(!run)return;const sw=W/z,sh=H/z;try{cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);if(cine)cineGrade(cx,W,H);}catch(e){}requestAnimationFrame(d);})();
