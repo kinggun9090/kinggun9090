@@ -159,13 +159,27 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 .tile{border-radius:0}
 #review,#monitor,#home{padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
 .res,.ctl{scroll-margin-bottom:170px}
+
+/* ---- 겹침 방지 + 텍스트 상자 테두리 통일 ---- */
+.top{align-items:center;row-gap:6px}
+.top .pill,.top .chip{flex:0 1 auto;min-width:0}
+#pillConn{flex:1 1 100%;order:9;max-width:100%}
+.stack{top:calc(env(safe-area-inset-top) + 130px)!important}
+.pill,.pane .lab,.phase,.stagemsg,.msg,#toast,.tempo,.note,.hudhead{border:1px solid var(--line)!important;border-radius:var(--r)!important}
+.pill.ok,.pill.bad,.pill.rec{border:1px solid var(--line)!important}
+.pill.rec{border-color:var(--red)!important}
+.tempo,.note,.hudhead{padding:8px 10px;margin-left:0;margin-right:0;background:var(--card)}
+.pane .lab{display:inline-flex;align-items:center;line-height:1.2}
+.pane .lab{max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pane .phase{max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#toast{z-index:99}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v17</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v18</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -320,6 +334,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
     <div class="scroll">
       <button class="chip sm on" id="tLoop">반복 재생</button>
       <button class="chip sm on" id="tSkel">뼈대 표시</button>
+      <button class="chip sm on" id="tSound">🔊 소리 켜짐</button>
       <button class="chip sm" id="tCmp">이전 스윙 비교</button>
       <button class="chip sm" id="bAlignImp">임팩트 정렬</button>
       <button class="chip sm" id="bAlignOff">정렬 해제</button>
@@ -429,7 +444,8 @@ async function openCamera(){
   const fps=+$('#fpsSel').value;
   let err=null;
   // 1) 가장 단순한 요청부터 (아이폰 사파리에서 가장 안정적)
-  for(const c of[{video:{facingMode:{ideal:S.facing}},audio:false},{video:true,audio:false}]){
+  const AUD={echoCancellation:false,noiseSuppression:false,autoGainControl:false};
+  for(const c of[{video:{facingMode:{ideal:S.facing}},audio:AUD},{video:{facingMode:{ideal:S.facing}},audio:true},{video:{facingMode:{ideal:S.facing}},audio:false},{video:true,audio:false}]){
     try{S.stream=await navigator.mediaDevices.getUserMedia(c);break;}catch(e){err=e;if(e.name==='NotAllowedError')break;}
   }
   if(!S.stream){$('#pillFps').textContent='카메라 꺼짐';camFail(err);return false;}
@@ -444,7 +460,8 @@ async function openCamera(){
   hideMsg();
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
-  $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps`;
+  S.hasAudio=S.stream.getAudioTracks().length>0;
+  $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps${S.hasAudio?' · 🎤':' · 🔇'}`;
   try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
   if(S.role==='cam'){sendLive();sendInfo();}
   return true;
@@ -721,7 +738,7 @@ function sendLive(){
   if(S.conn.isNT){S.conn.attachStream(S.stream);[1000,4000,9000].forEach(t=>setTimeout(()=>tuneLive(S.conn&&S.conn.pc),t));return;}
   if(!S.peer||!S.remoteId)return;
   try{if(S.call)S.call.close();}catch(e){}
-  try{S.call=S.peer.call(S.remoteId,S.stream);}catch(e){console.warn(e);}
+  try{S.call=S.peer.call(S.remoteId,new MediaStream(S.stream.getVideoTracks()));}catch(e){console.warn(e);}
   [1500,4000,9000].forEach(t=>setTimeout(()=>tuneLive(S.call),t));
 }
 function sendInfo(){if(S.role==='cam'&&connected())S.conn.send({type:'info',text:$('#pillFps').textContent});}
@@ -1277,6 +1294,15 @@ function applyFit(){
 }
 function toggleFit(){fitContain=!fitContain;try{localStorage.setItem('swinglab_fit',fitContain?'contain':'cover');}catch(e){}applyFit();}
 
+
+/* 소리 (녹음된 음성 재생) */
+(function(){
+  let on=true;try{on=localStorage.getItem('swinglab_snd')!=='0';}catch(e){}
+  const apply=()=>{['vA','vB'].forEach(id=>{const v=$('#'+id);if(v)v.muted=!on||(id==='vB');});const b=$('#tSound');b.classList.toggle('on',on);b.textContent=on?'🔊 소리 켜짐':'🔇 소리 꺼짐';};
+  apply();
+  $('#tSound').onclick=()=>{on=!on;try{localStorage.setItem('swinglab_snd',on?'1':'0');}catch(e){}apply();};
+  ['vA'].forEach(id=>{const v=$('#'+id);['loadedmetadata','play','ratechange'].forEach(ev=>v.addEventListener(ev,()=>{v.muted=!on;}));});
+})();
 /* 왼손잡이 (하단 바) */
 (function(){
   let on=false;try{on=localStorage.getItem('swinglab_lefty')==='1';}catch(e){}
