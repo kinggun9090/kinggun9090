@@ -45,6 +45,8 @@ input[type=text],input[type=tel],select{background:var(--card);border:1px solid 
 .recbtn.stop{border-radius:18px;width:64px;height:64px}
 .round{width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:20px}
 .msg{position:absolute;left:24px;right:24px;top:22%;background:rgba(0,0,0,.8);padding:16px;border-radius:14px;text-align:center;z-index:4;display:none;line-height:1.55;white-space:pre-line;font-size:15px;word-break:keep-all}
+#preview,#liveVideo{position:fixed!important;left:0;top:0;width:100vw!important;height:100vh!important;height:100lvh!important;max-width:none!important;max-height:none!important;transform:translateZ(0)}
+#photoBtn{position:fixed;top:calc(env(safe-area-inset-top) + 100px);right:10px;width:auto!important;padding:8px 12px;font-size:13px;border-radius:999px;z-index:6}
 /* monitor */
 .bigcode{font-size:56px;font-weight:800;letter-spacing:8px;color:var(--acc);text-align:center;margin:4px 0}
 .hist{display:flex;flex-direction:column;gap:8px}
@@ -456,7 +458,7 @@ function leaveAll(){
   closeCamera();
   try{if(S.conn)S.conn.close();}catch(e){}
   try{if(S.peer)S.peer.destroy();}catch(e){}
-  try{if(S.call)S.call.close();}catch(e){}S.call=null;S.viewWanted=false;S.hostWanted=false;clearInterval(S.hostWatch);S.hostBusy=false;$('#liveVideo').srcObject=null;liveState('idle');
+  try{if(S.call)S.call.close();}catch(e){}S.call=null;S.viewWanted=false;S.hostWanted=false;clearInterval(S.hostWatch);try{if(S.ntEs)S.ntEs.close();}catch(e){}S.hostBusy=false;$('#liveVideo').srcObject=null;liveState('idle');
   S.conn=null;S.peer=null;S.role='solo';S.savedMode=false;S.stateText='';hideMsg();show('home');
 }
 
@@ -475,8 +477,10 @@ async function ensurePeer(){
 }
 function setNet(t){S.net=t;camUI();monUI();}
 function setupConn(c){
-  S.conn=c;
-  c.on('open',()=>{S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');
+  if(!connected())S.conn=c;
+  c.on('open',()=>{
+    if(S.conn!==c){if(connected()){try{c.close();}catch(e){}return;}S.conn=c;}
+    S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');
     if(S.role==='cam'){sendLive();sendInfo();}
     if(S.role==='view'&&!S.savedMode&&$('#monitor').classList.contains('active'))goLive();
   });
@@ -490,11 +494,116 @@ function setupConn(c){
   });
   c.on('error',e=>toast('연결 오류: '+e));
 }
+
+/* ---------- 대체 연결: ntfy.sh 신호 + 직접 WebRTC (PeerJS 서버가 안 될 때 자동 사용) ---------- */
+const NT='https://ntfy.sh/';
+const ntTopic=()=>'swlab9kg'+S.code+'q';
+const ntSleep=ms=>new Promise(r=>setTimeout(r,ms));
+function ntGather(pc){return new Promise(r=>{if(pc.iceGatheringState==='complete')return r();const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);r();}};pc.addEventListener('icegatheringstatechange',f);setTimeout(r,4000);});}
+function ntPost(obj){
+  const id=Math.random().toString(36).slice(2,8),s=JSON.stringify(obj),parts=s.match(/[\s\S]{1,1700}/g)||[];
+  return Promise.all(parts.map((p,i)=>fetch(NT+ntTopic(),{method:'POST',body:JSON.stringify({m:id,i,n:parts.length,p})}).catch(()=>{})));
+}
+function ntSub(handler){
+  const buf={},seen=new Set();let es;
+  try{es=new EventSource(NT+ntTopic()+'/sse?since=25s');}catch(e){return {close(){}};}
+  es.onmessage=ev=>{
+    try{
+      const d=JSON.parse(ev.data);if(d.event!=='message'||seen.has(d.id))return;seen.add(d.id);
+      if(Date.now()/1000-d.time>40)return;
+      const q=JSON.parse(d.message);const b=buf[q.m]||(buf[q.m]={n:q.n,p:[],c:0});
+      if(b.p[q.i]===undefined){b.p[q.i]=q.p;b.c++;}
+      if(b.c>=b.n){delete buf[q.m];handler(JSON.parse(b.p.join('')));}
+    }catch(e){}
+  };
+  return es;
+}
+function ntConn(pc,peerId){
+  const h={};
+  const o={open:false,peer:peerId,isNT:true,pc,dc:null,rx:null,
+    on(e,f){(h[e]=h[e]||[]).push(f);return o;},
+    emit(e,a){(h[e]||[]).slice().forEach(f=>{try{f(a);}catch(x){console.warn(x);}});},
+    close(){try{if(o.dc)o.dc.close();}catch(e){}try{pc.close();}catch(e){}if(o.open){o.open=false;o.emit('close');}},
+    send(d){
+      const dc=o.dc;if(!dc||dc.readyState!=='open')return;
+      if(d.type==='clip'){
+        const b=d.buf;dc.send(JSON.stringify({type:'clipHdr',mime:d.mime,dur:d.dur,fps:d.fps,size:b.byteLength}));
+        (async()=>{for(let off=0;off<b.byteLength;off+=16000){while(dc.bufferedAmount>1e6){await ntSleep(30);if(dc.readyState!=='open')return;}dc.send(b.slice(off,off+16000));}})();
+        return;
+      }
+      dc.send(JSON.stringify(d));
+    },
+    attachStream(st){
+      try{const t=st&&st.getVideoTracks()[0];const tr=pc.getTransceivers().find(x=>x.receiver&&x.receiver.track&&x.receiver.track.kind==='video');
+        if(t&&tr)tr.sender.replaceTrack(t);}catch(e){console.warn(e);}
+    },
+    bind(dc){
+      o.dc=dc;dc.binaryType='arraybuffer';
+      dc.onopen=()=>{o.open=true;o.emit('open');};
+      dc.onclose=()=>{if(o.open){o.open=false;o.emit('close');}};
+      dc.onmessage=ev=>{
+        if(typeof ev.data==='string'){
+          const d=JSON.parse(ev.data);
+          if(d.type==='clipHdr'){o.rx={hdr:d,parts:[],got:0};return;}
+          o.emit('data',d);
+        }else if(o.rx){
+          o.rx.parts.push(new Uint8Array(ev.data));o.rx.got+=ev.data.byteLength;
+          if(o.rx.got>=o.rx.hdr.size){
+            const u=new Uint8Array(o.rx.hdr.size);let p=0;o.rx.parts.forEach(x=>{u.set(x,p);p+=x.length;});
+            const hd=o.rx.hdr;o.rx=null;o.emit('data',{type:'clip',mime:hd.mime,dur:hd.dur,fps:hd.fps,buf:u.buffer});
+          }
+        }
+      };
+    }
+  };
+  pc.addEventListener('connectionstatechange',()=>{if(['failed','closed'].includes(pc.connectionState)&&o.open){o.open=false;o.emit('close');}});
+  return o;
+}
+/* A폰: 확인폰의 offer를 듣고 answer */
+function ntHostStart(){
+  try{if(S.ntEs)S.ntEs.close();}catch(e){}
+  const done=new Set();
+  S.ntEs=ntSub(async m=>{
+    if(m.t!=='offer'||done.has(m.from)||connected())return;done.add(m.from);
+    try{
+      setNet('확인폰이 연결하는 중…');
+      const pc=new RTCPeerConnection(ICE);const o=ntConn(pc,m.from);
+      pc.ondatachannel=e=>o.bind(e.channel);
+      S.remoteId=m.from;setupConn(o);
+      await pc.setRemoteDescription({type:'offer',sdp:m.sdp});
+      const tr=pc.getTransceivers().find(x=>x.receiver&&x.receiver.track&&x.receiver.track.kind==='video');
+      if(tr){tr.direction='sendonly';const t=S.stream&&S.stream.getVideoTracks()[0];if(t)await tr.sender.replaceTrack(t);}
+      const ans=await pc.createAnswer();await pc.setLocalDescription(ans);await ntGather(pc);
+      await ntPost({t:'answer',to:m.from,sdp:pc.localDescription.sdp});
+      setTimeout(()=>{if(!o.open){try{pc.close();}catch(e){}if(!connected())setNet('✅ 대기 중 · 확인폰에서 비밀번호 '+S.code+' 로 연결하세요');}},20000);
+    }catch(e){console.warn(e);}
+  });
+}
+/* B폰: offer를 보내고 answer를 기다림 */
+async function ntViewerConnect(){
+  if(S.ntBusy||connected()||!S.viewWanted||S.role!=='view')return;
+  S.ntBusy=true;
+  const myId='v'+Math.random().toString(36).slice(2,8);
+  const pc=new RTCPeerConnection(ICE);const o=ntConn(pc,'host');
+  o.bind(pc.createDataChannel('d'));
+  pc.addTransceiver('video',{direction:'recvonly'});
+  pc.ontrack=e=>{attachLive((e.streams&&e.streams[0])||new MediaStream([e.track]));};
+  let es=null;
+  const fin=()=>{S.ntBusy=false;try{if(es)es.close();}catch(e){}};
+  const to=setTimeout(()=>{if(!o.open){try{pc.close();}catch(e){}fin();}},22000);
+  o.on('open',()=>{clearTimeout(to);fin();});
+  setupConn(o);
+  es=ntSub(m=>{if(m.t==='answer'&&m.to===myId){pc.setRemoteDescription({type:'answer',sdp:m.sdp}).catch(()=>{});}});
+  try{
+    const off=await pc.createOffer();await pc.setLocalDescription(off);await ntGather(pc);
+    await ntPost({t:'offer',from:myId,sdp:pc.localDescription.sdp});
+  }catch(e){fin();}
+}
 /* A폰(촬영폰): 비밀번호로 방을 열고 확인폰이 들어오길 대기 (끊기면 스스로 다시 열기) */
 const pid=pin=>'swlab9-kg-'+pin;
 function startCamHost(pin){
   S.code=pin;S.hostWanted=true;S.hostGen=(S.hostGen||0)+1;S.hostTries=0;
-  clearInterval(S.hostWatch);
+  clearInterval(S.hostWatch);ntHostStart();
   S.hostWatch=setInterval(()=>{
     if(!S.hostWanted||S.role!=='cam'||connected()||S.hostBusy)return;
     const p=S.peer;
@@ -528,7 +637,7 @@ async function makeHost(){
     if(S.peer!==p||p.destroyed)return;
     setNet('서버 연결 끊김 · 재접속 중…');S.hostRecon=true;
     try{p.reconnect();}catch(e){}
-    setTimeout(()=>{S.hostRecon=false;if(S.peer===p&&p.disconnected&&!connected())again('서버 다시 접속 중…',500);},6000);
+    setTimeout(()=>{S.hostRecon=false;if(S.peer===p&&p.disconnected&&!connected())again('서버 다시 접속 중…',300);},2500);
   });
   p.on('error',e=>{
     if(S.peer!==p)return;
@@ -548,7 +657,8 @@ async function viewerConnect(){
   S.viewBusy=true;
   setNet(S.viewTries?'촬영폰을 찾는 중… 촬영폰에서 같은 비밀번호로 시작했는지 확인하세요':'서버 접속 중…');
   if(!await ensurePeer()){S.viewBusy=false;S.viewTries++;setNet('연결 라이브러리를 불러오지 못했어요 · 인터넷 확인');setTimeout(viewerConnect,4000);return;}
-  S.conn=null;
+  if(!connected())S.conn=null;
+  setTimeout(ntViewerConnect,5000);
   if(S.peer){try{S.peer.destroy();}catch(e){}S.peer=null;}
   const p=new Peer(undefined,{config:ICE});S.peer=p;
   let settled=false;
@@ -577,7 +687,9 @@ async function viewerConnect(){
 }
 /* ---------- 실시간 화면 (A → B) ---------- */
 function sendLive(){
-  if(S.role!=='cam'||!S.peer||!S.remoteId||!S.stream||!connected())return;
+  if(S.role!=='cam'||!S.stream||!connected())return;
+  if(S.conn.isNT){S.conn.attachStream(S.stream);return;}
+  if(!S.peer||!S.remoteId)return;
   try{if(S.call)S.call.close();}catch(e){}
   try{S.call=S.peer.call(S.remoteId,S.stream);}catch(e){console.warn(e);}
   setTimeout(()=>tuneLive(S.call),1500);setTimeout(()=>tuneLive(S.call),5000);
@@ -1121,12 +1233,18 @@ $('#bRemote').onclick=()=>{
 $('#bBack').onclick=leaveAll;
 function tryFullscreen(){try{const e=document.documentElement;if(!document.fullscreenElement&&e.requestFullscreen)e.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(x){}}
 let fitContain=false;try{fitContain=localStorage.getItem('swinglab_fit')==='contain';}catch(e){}
+function forceFull(){
+  const w=Math.max(window.innerWidth,screen.width&&window.innerWidth?window.innerWidth:0),h=Math.max(window.innerHeight,document.documentElement.clientHeight);
+  ['preview','liveVideo'].forEach(id=>{const v=$('#'+id);if(!v)return;v.style.width=w+'px';v.style.height=h+'px';});
+}
+['resize','orientationchange','pageshow'].forEach(ev=>window.addEventListener(ev,()=>{forceFull();setTimeout(forceFull,300);}));
+setInterval(forceFull,1500);
 function applyFit(){
   ['preview','liveVideo'].forEach(id=>$('#'+id).classList.toggle('fitContain',fitContain));
   const t=fitContain?'▢ 전체 보기':'▣ 꽉 채우기';$('#fitBtn').textContent=t;$('#lvFit').textContent=t;
 }
 function toggleFit(){fitContain=!fitContain;try{localStorage.setItem('swinglab_fit',fitContain?'contain':'cover');}catch(e){}applyFit();}
-$('#fitBtn').onclick=toggleFit;$('#lvFit').onclick=toggleFit;applyFit();
+forceFull();$('#fitBtn').onclick=toggleFit;$('#lvFit').onclick=toggleFit;applyFit();
 (function(){const sa=window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
   if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!sa)$('#a2hs').style.display='block';})();
 $('#lvRec').onclick=()=>{
@@ -1143,7 +1261,7 @@ $('#lvExit').onclick=leaveAll;
 $('#bGoLive').onclick=()=>goLive();
 $('#bToLive').onclick=()=>{setPlaying(false);goLive();};
 $('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메라가 켜졌어요');};
-$('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';S.viewTries=0;S.viewBusy=false;S.viewWanted=true;toast('촬영폰에 연결 시도 중…');viewerConnect();};
+$('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';S.viewTries=0;S.viewBusy=false;S.viewWanted=true;toast('촬영폰에 연결 시도 중…');S.ntBusy=false;viewerConnect();};
 $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
 $('#fpsSel').onchange=()=>openCamera();
 $('#resSel').onchange=()=>openCamera();
