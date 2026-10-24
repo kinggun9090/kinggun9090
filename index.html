@@ -224,11 +224,11 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 .tb.on{background:var(--acc);color:#031a18;border-color:var(--acc)}
 #expWrap{position:fixed;right:58px;top:calc(env(safe-area-inset-top) + 124px);z-index:6;background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:var(--r);padding:0 12px;height:38px;display:none;align-items:center;width:150px}
 #expWrap input{width:100%;accent-color:var(--acc)}
-#gridOv{position:fixed;inset:0;pointer-events:none;z-index:2;display:none;background:
+#gridOv,#lvGridOv{position:fixed;inset:0;pointer-events:none;z-index:2;display:none;background:
  linear-gradient(to right,transparent 33.2%,rgba(255,255,255,.35) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.35) 66.6%,transparent 66.8%),
  linear-gradient(to bottom,transparent 33.2%,rgba(255,255,255,.35) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.35) 66.6%,transparent 66.8%)}
-#levelLn{position:fixed;left:50%;top:50%;width:140px;height:2px;margin-left:-70px;background:rgba(255,255,255,.8);z-index:2;pointer-events:none;display:none;border-radius:2px}
-#levelLn.ok{background:#ffd54a}
+#levelLn,#lvLevelLn{position:fixed;left:50%;top:50%;width:140px;height:2px;margin-left:-70px;background:rgba(255,255,255,.8);z-index:2;pointer-events:none;display:none;border-radius:2px}
+#levelLn.ok,#lvLevelLn.ok{background:#ffd54a}
 #lvZoom{position:absolute;left:0;right:0;justify-content:center;gap:6px;bottom:calc(100% + 0px);pointer-events:auto}
 #lvZoom .chip{min-width:52px;height:32px!important;min-height:32px!important;font-size:12px!important}
 #lvZoom .chip.on{background:var(--acc)!important;color:#031a18!important}
@@ -281,11 +281,11 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #modeBar button.on{color:var(--acc);border-color:var(--acc);background:rgba(0,0,0,.55)}
 .recbtn.photo{background:#fff}
 #shotFlash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:25;transition:opacity .12s}
-#levelRef{position:fixed;left:50%;top:50%;width:230px;height:2px;margin:-1px 0 0 -115px;display:none;justify-content:space-between;pointer-events:none;z-index:2}
-#levelRef i{display:block;width:26px;height:2px;background:rgba(255,255,255,.75);border-radius:2px}
-#levelRef.ok i{background:#ffd54a}
-#levelLn{width:150px!important;margin-left:-75px!important;margin-top:-1px;height:2px!important;background:rgba(255,255,255,.85)}
-#levelLn.ok{background:#ffd54a!important}
+#levelRef,#lvLevelRef{position:fixed;left:50%;top:50%;width:230px;height:2px;margin:-1px 0 0 -115px;display:none;justify-content:space-between;pointer-events:none;z-index:2}
+#levelRef i,#lvLevelRef i{display:block;width:26px;height:2px;background:rgba(255,255,255,.75);border-radius:2px}
+#levelRef.ok i,#lvLevelRef.ok i{background:#ffd54a}
+#levelLn,#lvLevelLn{width:150px!important;margin-left:-75px!important;margin-top:-1px;height:2px!important;background:rgba(255,255,255,.85)}
+#levelLn.ok,#lvLevelLn.ok{background:#ffd54a!important}
 #cam .stack{bottom:calc(env(safe-area-inset-bottom) + 270px)!important}
 
 /* ======== 시네마틱 ======== */
@@ -329,13 +329,20 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #lvModeBar button{border:1px solid transparent;background:transparent;color:#fff;font-size:12px;font-weight:600;height:28px;padding:0 9px;border-radius:var(--r);text-shadow:0 1px 3px #000;white-space:nowrap}
 #lvModeBar button.on{color:var(--acc);border-color:var(--acc);background:rgba(0,0,0,.55)}
 #live #lvRecInd{top:calc(env(safe-area-inset-top) + 92px)}
+
+/* ======== v33: 촬영폰 = 확인폰 배치 ======== */
+#cam .top{grid-template-columns:1fr 1.5fr 1fr}
+#cam #pillConn{grid-column:1 / -1}
+#cam .top>*,#live .top>*{height:28px!important}
+#cam .toolcol,#live .toolcol{right:16px;top:calc(env(safe-area-inset-top) + 124px);gap:10px}
+#cam .tb,#live .tb{width:38px;height:38px}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v32</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v33</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -394,10 +401,11 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
   <video id="preview" playsinline muted autoplay></video>
   <canvas id="fxCv"></canvas>
   <div class="top">
-    <span class="pill" id="pillRole"></span>
-    <span class="pill" id="pillConn"></span>
+    <button class="chip sm" id="bBackTop">✕ 종료</button>
     <span class="pill" id="pillFps"></span>
     <button class="chip sm" id="fitBtn">▣ 꽉 채우기</button>
+    <span class="pill" id="pillConn"></span>
+    <span class="pill" id="pillRole" style="display:none"></span>
   </div>
   <div id="count"></div>
   <div id="gridOv"></div><div id="levelRef"><i></i><i></i></div><div id="levelLn"></div><div id="shotFlash"></div><div id="cineOv"><i id="cbT"></i><i id="cbB"></i></div>
@@ -423,7 +431,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
       <select id="fpsSel"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
     <div class="row" style="gap:28px">
-      <button class="round" id="bBack">✕</button>
+      <button class="round" id="bBack" aria-label="사진첩에 저장">🗂</button>
       <button class="recbtn" id="bRec" aria-label="촬영"></button>
       <button class="round" id="bFlip">🔄</button>
     </div>
@@ -441,8 +449,11 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
     <span class="pill ok" id="lvConnPill">● LIVE · 촬영폰 연결됨</span>
     <span class="pill rec" id="lvRecInd" style="display:none"><span style="color:var(--red)">●</span> REC <span id="lvTimer">0:00</span></span>
   </div>
+  <div id="lvGridOv"></div><div id="lvLevelRef"><i></i><i></i></div><div id="lvLevelLn"></div>
   <div id="lvCount"></div>
   <div class="toolcol">
+    <button class="tb" id="lvTbGrid" aria-label="격자">▦</button>
+    <button class="tb on" id="lvTbLevel" aria-label="수평선">⎯</button>
     <button class="tb" id="lvFxBtn" aria-label="보정">✨</button>
   </div>
   <div id="lvModeBar"><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button><button data-m="slomo">슬로모</button></div>
@@ -670,7 +681,7 @@ function camUI(){
   const c=$('#pillConn');
   if(S.role!=='cam'){c.style.display='none';return;}
   c.style.display='';c.className='pill '+(connected()?'ok':'bad');
-  c.textContent=connected()?'확인폰 연결됨':(S.net||'연결 중…');
+  c.textContent=connected()?'● 📷 촬영폰 · 확인폰 연결됨':(S.net||'연결 중…');
 }
 function monUI(){
   $('#bigCode').textContent=S.code||'----';
@@ -972,6 +983,7 @@ function onData(d){
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
   else if(d.type==='focus'){if(S.role==='cam'){const v=$('#preview');const r=v.getBoundingClientRect();ring(r.left+d.x*r.width,r.top+d.y*r.height);focusAt(d.x,d.y);}}
   else if(d.type==='zoom'){S.rz=d.label||d.z||1;paintZoom(S.rz,'#lvZoom');const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';{const lc=$('#lvFxCv');lc.style.transformOrigin='center';lc.style.transform=lv.style.transform;}document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-(d.label||d.z))<0.05));}
+  else if(d.type==='lvl'){viewTilt(d.th);}
   else if(d.type==='zoomset'){if(S.role==='cam')setZoom(d.z);}
   else if(d.type==='mode'){if(S.role==='cam'&&!S.recording)setMode(d.m);else if(S.role==='view')document.querySelectorAll('#lvModeBar button').forEach(b=>b.classList.toggle('on',b.dataset.m===d.m));}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
@@ -1473,7 +1485,8 @@ $('#bRemote').onclick=()=>{
   if(!connected()){toast('촬영폰이 아직 연결되지 않았어요');return;}
   S.conn.send({type:'rec',dur:+$('#monDur').value*1000});toast('촬영폰에서 3초 뒤 촬영이 시작돼요');
 };
-$('#bBack').onclick=leaveAll;
+$('#bBackTop').onclick=leaveAll;
+$('#bBack').onclick=()=>{if(S.photoQ&&S.photoQ.length)savePhotos();else toast('저장할 새 영상이 없어요');};
 function tryFullscreen(){try{const e=document.documentElement;if(!document.fullscreenElement&&e.requestFullscreen)e.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(x){}}
 let fitContain=false;try{fitContain=localStorage.getItem('swinglab_fit')==='contain';}catch(e){}
 function forceFull(){
@@ -1594,20 +1607,38 @@ document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>{if(S.justD
   lr.addEventListener('touchstart',e=>{lx=e.touches[0].clientX;lz=S.rz||1;ld=false;},{passive:true});
   lr.addEventListener('touchmove',e=>{
     const dx=e.touches[0].clientX-lx;if(!ld&&Math.abs(dx)<8)return;ld=true;e.preventDefault();
-    const z=Math.max(1,Math.min(6,lz*Math.pow(2,dx/120)));
+    const z=Math.max(0.5,Math.min(6,lz*Math.pow(2,dx/120)));
     if(performance.now()-lt>120&&connected()){lt=performance.now();S.conn.send({type:'zoomset',z});}
   },{passive:false});
   lr.addEventListener('touchend',()=>{if(ld){S.justDragged=true;setTimeout(()=>{S.justDragged=false;},350);}ld=false;},{passive:true});
 })();
 document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});S.rz=+b.dataset.z;paintZoom(S.rz,'#lvZoom');}});
 
+
+// 확인폰: 격자 / 수평선 (수평선은 촬영폰 센서 값)
+let viewTilt=()=>{};
+(function(){
+  let grid=false,lvl=true;try{grid=localStorage.getItem('swinglab_lvgrid')==='1';lvl=localStorage.getItem('swinglab_lvlvl')!=='0';}catch(e){}
+  let last=null;
+  const ln=$('#lvLevelLn'),rf=$('#lvLevelRef');
+  function draw(){
+    if(!lvl||last==null){ln.style.display='none';rf.style.display='none';return;}
+    ln.style.display='block';rf.style.display='flex';ln.style.transform='rotate('+last.toFixed(2)+'deg)';
+    const ok=Math.abs(last)<1;ln.classList.toggle('ok',ok);rf.classList.toggle('ok',ok);
+  }
+  viewTilt=t=>{last=(t==null)?null:t;draw();};
+  function paint(){$('#lvGridOv').style.display=grid?'block':'none';$('#lvTbGrid').classList.toggle('on',grid);$('#lvTbLevel').classList.toggle('on',lvl);draw();}
+  $('#lvTbGrid').onclick=()=>{grid=!grid;try{localStorage.setItem('swinglab_lvgrid',grid?'1':'0');}catch(e){}paint();};
+  $('#lvTbLevel').onclick=()=>{lvl=!lvl;try{localStorage.setItem('swinglab_lvlvl',lvl?'1':'0');}catch(e){}paint();if(lvl&&last==null)toast('촬영폰이 세워져 있으면 수평선이 보여요');};
+  paint();
+})();
 // 확인폰: 모드 원격 변경 + 화면 핀치 줌
 document.querySelectorAll('#lvModeBar button').forEach(b=>b.onclick=()=>{if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}S.conn.send({type:'mode',m:b.dataset.m});document.querySelectorAll('#lvModeBar button').forEach(x=>x.classList.toggle('on',x===b));});
 (function(){
   const el=$('#live');let d0=0,z0=1,t0=0;
   const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
   el.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e);z0=S.rz||1;}},{passive:true});
-  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const z=Math.max(1,Math.min(6,z0*dist(e)/d0));if(performance.now()-t0>120&&connected()){t0=performance.now();S.conn.send({type:'zoomset',z});}}},{passive:false});
+  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const z=Math.max(0.5,Math.min(6,z0*dist(e)/d0));if(performance.now()-t0>120&&connected()){t0=performance.now();S.conn.send({type:'zoomset',z});}}},{passive:false});
   el.addEventListener('touchend',e=>{if(e.touches.length<2)d0=0;},{passive:true});
 })();
 // 핀치 줌
@@ -1624,23 +1655,26 @@ $('#tbExp').onclick=()=>{const w=$('#expWrap');w.style.display=w.style.display==
 $('#expRange').oninput=e=>{const t=camTrack();if(t)t.applyConstraints({advanced:[{exposureCompensation:+e.target.value}]}).catch(()=>{});};
 // 격자 + 수평선(가속도 센서)
 let reqMotion=()=>{};
+function sendTilt(t){if(S.role!=='cam'||!connected())return;const n=performance.now();if(n-(sendTilt.t||0)<120)return;sendTilt.t=n;try{S.conn.send({type:'lvl',th:t});}catch(e){}}
 (function(){
   let grid=false,lvl=true;try{grid=localStorage.getItem('swinglab_grid')==='1';lvl=localStorage.getItem('swinglab_lvl')!=='0';}catch(e){}
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   let th=0,flip=false,listening=false;
   function hide(){$('#levelLn').style.display='none';$('#levelRef').style.display='none';}
   function onMotion(e){
-    if(!$('#cam').classList.contains('active')||!lvl){hide();return;}
+    if(!$('#cam').classList.contains('active')){hide();return;}
     const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
     let gx=a.x,gy=a.y,gz=a.z;if(!isIOS){gx=-gx;gy=-gy;gz=-gz;}
     const m=Math.hypot(gx,gy,gz)||1;
-    if(Math.abs(gz)/m>0.75){hide();return;}   // 폰이 눕혀져 있으면 숨김
+    if(Math.abs(gz)/m>0.75){hide();sendTilt(null);return;}   // 폰이 눕혀져 있으면 숨김
     const ang=(screen.orientation&&screen.orientation.angle!=null)?screen.orientation.angle:(window.orientation||0);
     if(ang===0&&Math.abs(gy)/m>0.8)flip=gy>0;  // 세로로 세웠을 때 y가 위(+)면 부호가 반대인 기기 → 자동 보정
     if(flip){gx=-gx;gy=-gy;}
     let t=Math.atan2(-gx,-gy)*180/Math.PI-ang;
     while(t>90)t-=180;while(t<=-90)t+=180;
     th=Math.abs(t-th)>60?t:th*0.6+t*0.4;
+    sendTilt(th);
+    if(!lvl){hide();return;}
     const ln=$('#levelLn'),rf=$('#levelRef');
     ln.style.display='block';rf.style.display='flex';
     ln.style.transform='rotate('+th.toFixed(2)+'deg)';
