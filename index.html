@@ -213,13 +213,32 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #fring.pre{transform:scale(1.5)}
 #lvRecInd{background:rgba(0,0,0,.55)!important;color:var(--txt)!important;border:1px solid var(--line)!important;font-weight:600!important;padding:0 12px!important;border-radius:var(--r)!important}
 #lvRecInd #lvTimer{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---- 카메라 기능: 줌 / 격자 / 수평 / 손전등 / 노출 ---- */
+#cam{overflow:hidden;touch-action:none}
+.zoomrow{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 176px);display:flex;gap:6px;z-index:6;background:rgba(0,0,0,.45);padding:4px;border-radius:999px}
+.zoomrow .chip{min-width:44px;padding:0 8px!important;height:32px!important;min-height:32px!important;font-size:12px!important;border-radius:999px!important;border-color:transparent!important;background:transparent!important}
+.zoomrow .chip.on{background:var(--acc)!important;color:#031a18!important}
+.toolcol{position:fixed;right:10px;top:calc(env(safe-area-inset-top) + 124px);display:flex;flex-direction:column;gap:8px;z-index:6}
+.tb{width:38px;height:38px;border-radius:var(--r);border:1px solid var(--line);background:rgba(0,0,0,.55);color:#fff;font-size:16px;padding:0}
+.tb.on{background:var(--acc);color:#031a18;border-color:var(--acc)}
+#expWrap{position:fixed;right:58px;top:calc(env(safe-area-inset-top) + 124px);z-index:6;background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:var(--r);padding:0 12px;height:38px;display:none;align-items:center;width:150px}
+#expWrap input{width:100%;accent-color:var(--acc)}
+#gridOv{position:fixed;inset:0;pointer-events:none;z-index:2;display:none;background:
+ linear-gradient(to right,transparent 33.2%,rgba(255,255,255,.35) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.35) 66.6%,transparent 66.8%),
+ linear-gradient(to bottom,transparent 33.2%,rgba(255,255,255,.35) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.35) 66.6%,transparent 66.8%)}
+#levelLn{position:fixed;left:50%;top:50%;width:140px;height:2px;margin-left:-70px;background:rgba(255,255,255,.8);z-index:2;pointer-events:none;display:none;border-radius:2px}
+#levelLn.ok{background:#ffd54a}
+#lvZoom{position:absolute;left:0;right:0;justify-content:center;gap:6px;bottom:calc(100% + 0px);pointer-events:auto}
+#lvZoom .chip{min-width:52px;height:32px!important;min-height:32px!important;font-size:12px!important}
+#lvZoom .chip.on{background:var(--acc)!important;color:#031a18!important}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v22</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v23</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -283,6 +302,14 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
     <button class="chip sm" id="fitBtn">▣ 꽉 채우기</button>
   </div>
   <div id="count"></div>
+  <div id="gridOv"></div><div id="levelLn"></div>
+  <div class="toolcol">
+    <button class="tb" id="tbGrid" aria-label="격자">▦</button>
+    <button class="tb" id="tbTorch" aria-label="손전등" style="display:none">🔦</button>
+    <button class="tb" id="tbExp" aria-label="밝기" style="display:none">☀︎</button>
+  </div>
+  <div id="expWrap"><input type="range" id="expRange" min="-2" max="2" step="0.1" value="0"></div>
+  <div class="zoomrow" id="zoomRow"><button class="chip" data-z="0.5">.5</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2</button><button class="chip" data-z="3">3</button></div>
   <div class="stack">
     <div class="msg" id="camMsg"></div>
     <button class="btn pri" id="camRetry" style="display:none;text-align:center">📷 카메라 켜기 (허용 누르기)</button>
@@ -323,6 +350,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
       <select id="lvRes"><option value="720">720p</option><option value="1080" selected>1080p</option><option value="2160">4K</option></select>
       <select id="lvFps"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
+    <div class="row" id="lvZoom"><button class="chip" data-z="1">1x</button><button class="chip" data-z="2">2x</button><button class="chip" data-z="3">3x</button></div>
     <div class="row" style="gap:28px">
       <button class="round" id="lvHist" aria-label="스윙 기록">🗂</button>
       <button class="recbtn" id="lvRec" aria-label="촬영"></button>
@@ -504,7 +532,7 @@ async function openCamera(){
   hideMsg();
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
-  applyFocusMode();
+  applyFocusMode();initCamTools();
   S.hasAudio=S.stream.getAudioTracks().length>0;
   $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps${S.hasAudio?' · 🎤':' · 🔇'}`;
   try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
@@ -830,6 +858,8 @@ function onData(d){
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
   else if(d.type==='focus'){if(S.role==='cam'){const v=$('#preview');const r=v.getBoundingClientRect();ring(r.left+d.x*r.width,r.top+d.y*r.height);focusAt(d.x,d.y);}}
+  else if(d.type==='zoom'){const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-d.z)<0.05));}
+  else if(d.type==='zoomset'){if(S.role==='cam')setZoom(d.z);}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
   else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){if(d.fps)$('#fpsSel').value=String(d.fps);if(d.res)$('#resSel').value=String(d.res);openCamera();}}
   else if(d.type==='info'){$('#lvInfo').textContent='촬영폰 · '+d.text;}
@@ -866,12 +896,13 @@ function doStart(dur){
   S.chunks=[];
   const mime=pickMime();
   let r;
-  try{r=new MediaRecorder(S.stream,mime?{mimeType:mime,videoBitsPerSecond:recBitrate(),audioBitsPerSecond:128000}:{videoBitsPerSecond:recBitrate(),audioBitsPerSecond:128000});}
-  catch(e){try{r=new MediaRecorder(S.stream);}catch(e2){toast('이 브라우저는 녹화를 지원하지 않아요');S.recording=false;return;}}
+  S.recSrc=makeRecStream();
+  try{r=new MediaRecorder(S.recSrc,mime?{mimeType:mime,videoBitsPerSecond:recBitrate(),audioBitsPerSecond:128000}:{videoBitsPerSecond:recBitrate(),audioBitsPerSecond:128000});}
+  catch(e){try{r=new MediaRecorder(S.recSrc);}catch(e2){toast('이 브라우저는 녹화를 지원하지 않아요');S.recording=false;return;}}
   S.rec=r;
   r.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};
   r.onstart=()=>{S.recStart=performance.now();};
-  r.onstop=()=>finishRec(r.mimeType||mime||'video/mp4');
+  r.onstop=()=>{if(S.recCleanup){S.recCleanup();S.recCleanup=null;}finishRec(r.mimeType||mime||'video/mp4');};
   r.start(200);
   beep(1200,.15);
   if(S.role==='cam'&&connected())S.conn.send({type:'state',s:'rec'});
@@ -1375,6 +1406,77 @@ window.addEventListener('online',()=>setTimeout(revive,300));
 setInterval(()=>{if(connected()&&document.visibilityState==='visible'&&performance.now()-(S.lastHb||0)>9000){try{S.conn.close();}catch(e){}}},3000);
 
 
+
+/* ---------- 기본 카메라 기능 ---------- */
+function camTrack(){return S.stream&&S.stream.getVideoTracks()[0];}
+function camCaps(){try{const t=camTrack();return t&&t.getCapabilities?t.getCapabilities():{};}catch(e){return{};}}
+function initCamTools(){
+  const c=camCaps();
+  S.hwZoom=!!(c.zoom&&c.zoom.max>c.zoom.min);
+  S.zoomMin=S.hwZoom?Math.max(c.zoom.min,0.5):1;S.zoomMax=S.hwZoom?Math.min(c.zoom.max,10):4;
+  S.torchOn=false;S.hasTorch=!!c.torch;S.expCap=c.exposureCompensation&&c.exposureCompensation.max>c.exposureCompensation.min?c.exposureCompensation:null;
+  $('#tbTorch').style.display=S.hasTorch?'':'none';$('#tbTorch').classList.remove('on');
+  $('#tbExp').style.display=S.expCap?'':'none';$('#expWrap').style.display='none';
+  if(S.expCap){const r=$('#expRange');r.min=S.expCap.min;r.max=S.expCap.max;r.step=S.expCap.step||0.1;r.value=0;}
+  document.querySelectorAll('#zoomRow .chip').forEach(b=>{b.style.display=(+b.dataset.z<S.zoomMin-0.01||+b.dataset.z>S.zoomMax+0.01)?'none':'';});
+  S.zoom=1;S.swScale=1;$('#preview').style.transform='';
+  setZoom(1);
+}
+function setZoom(z){
+  if(S.recording)return;
+  z=Math.min(S.zoomMax||4,Math.max(S.zoomMin||1,z));S.zoom=z;
+  const t=camTrack();
+  if(S.hwZoom&&t){t.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{});S.swScale=1;$('#preview').style.transform='';}
+  else{S.swScale=z;$('#preview').style.transform=z>1.001?'scale('+z+')':'';}
+  let best=null,bd=9;document.querySelectorAll('#zoomRow .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z==='0.5'?'.5':b.dataset.z==='1'?'1x':b.dataset.z;if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
+  if(best){best.classList.add('on');best.textContent=(bd<0.05)?(best.dataset.z==='0.5'?'.5x':best.dataset.z+'x'):z.toFixed(1)+'x';}
+  if(S.role==='cam'&&connected()){try{S.conn.send({type:'zoom',z:S.swScale});}catch(e){}}
+}
+document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>setZoom(+b.dataset.z));
+document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});document.querySelectorAll('#lvZoom .chip').forEach(x=>x.classList.toggle('on',x===b));}});
+// 핀치 줌
+(function(){
+  const el=$('#cam');let d0=0,z0=1;
+  const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  el.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e);z0=S.zoom||1;}},{passive:true});
+  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();setZoom(z0*dist(e)/d0);}},{passive:false});
+  el.addEventListener('touchend',e=>{if(e.touches.length<2)d0=0;},{passive:true});
+})();
+// 손전등 / 노출
+$('#tbTorch').onclick=async()=>{const t=camTrack();if(!t)return;S.torchOn=!S.torchOn;try{await t.applyConstraints({advanced:[{torch:S.torchOn}]});}catch(e){S.torchOn=false;toast('손전등을 켤 수 없어요');}$('#tbTorch').classList.toggle('on',S.torchOn);};
+$('#tbExp').onclick=()=>{const w=$('#expWrap');w.style.display=w.style.display==='flex'?'none':'flex';$('#tbExp').classList.toggle('on',w.style.display==='flex');};
+$('#expRange').oninput=e=>{const t=camTrack();if(t)t.applyConstraints({advanced:[{exposureCompensation:+e.target.value}]}).catch(()=>{});};
+// 격자 + 수평선
+(function(){
+  let on=false;try{on=localStorage.getItem('swinglab_grid')==='1';}catch(e){}
+  let listening=false;
+  function onOri(e){
+    const ln=$('#levelLn');
+    const ang=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
+    if(ang!==0&&ang!==180||e.gamma==null||Math.abs(e.beta||0)<25){ln.style.display='none';return;}
+    ln.style.display='block';
+    const roll=(ang===180?-1:1)*e.gamma;
+    ln.style.transform='rotate('+(-roll)+'deg)';
+    ln.classList.toggle('ok',Math.abs(roll)<1);
+  }
+  function paint(){$('#gridOv').style.display=on?'block':'none';$('#tbGrid').classList.toggle('on',on);if(!on)$('#levelLn').style.display='none';}
+  async function enable(){
+    if(listening)return;
+    try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')return;}}catch(e){return;}
+    window.addEventListener('deviceorientation',ev=>{if(on)onOri(ev);});listening=true;
+  }
+  paint();
+  $('#tbGrid').onclick=async()=>{on=!on;try{localStorage.setItem('swinglab_grid',on?'1':'0');}catch(e){}paint();if(on)await enable();};
+})();
+// 소프트웨어 줌 녹화: 확대된 화면을 캔버스로 그려 녹화
+function makeRecStream(){
+  if(!(S.swScale>1.001))return S.stream;
+  const v=$('#preview'),W=v.videoWidth,H=v.videoHeight,z=S.swScale;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');let run=true;
+  (function d(){if(!run)return;const sw=W/z,sh=H/z;try{cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);}catch(e){}requestAnimationFrame(d);})();
+  const out=cv.captureStream(S.fps||30);S.stream.getAudioTracks().forEach(a=>out.addTrack(a));
+  S.recCleanup=()=>{run=false;};return out;
+}
 /* ---------- 초점 (탭해서 초점 / 연속 자동초점) ---------- */
 function applyFocusMode(){
   try{
