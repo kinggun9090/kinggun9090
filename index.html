@@ -151,7 +151,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
       <div style="margin-top:12px"><button class="chip on" id="bGoLive" style="display:none">📡 촬영폰 라이브 화면 열기</button></div>
     </div>
     <div class="row" id="monRemoteRow">
-      <select id="monDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <select id="monDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select>
       <button class="btn pri" id="bRemote" style="text-align:center">🎬 원격 촬영 시작</button>
     </div>
     <button class="btn" id="bMonImport">📂 저장된 영상 불러오기</button>
@@ -172,9 +172,11 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   <div id="count"></div>
   <div class="msg" id="camMsg"></div>
   <button class="btn pri" id="camRetry" style="position:absolute;left:24px;right:24px;width:auto;top:62%;z-index:5;display:none;text-align:center;font-size:17px;padding:16px">📷 카메라 켜기 (허용 누르기)</button>
+  <button class="btn pri" id="photoBtn" style="position:absolute;left:24px;right:24px;width:auto;bottom:calc(env(safe-area-inset-bottom) + 172px);z-index:6;display:none;text-align:center;font-size:16px;padding:14px">📷 사진첩에 저장</button>
   <div class="bottom">
     <div class="row">
-      <select id="durSel"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <select id="durSel"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select>
+      <select id="resSel"><option value="720">720p</option><option value="1080" selected>1080p</option><option value="2160">4K</option></select>
       <select id="fpsSel"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
     <div class="row" style="gap:28px">
@@ -196,9 +198,11 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   <div id="lvCount"></div>
   <div class="lvrec" id="lvRecInd" style="display:none">● REC <span id="lvTimer">0:00</span></div>
   <div class="msg" id="lvMsg" style="display:block">📡 촬영폰 화면 불러오는 중…</div>
+  <button class="btn pri" id="lvPhoto" style="position:absolute;left:24px;right:24px;width:auto;bottom:calc(env(safe-area-inset-bottom) + 172px);z-index:6;display:none;text-align:center;font-size:16px;padding:14px">📷 사진첩에 저장</button>
   <div class="bottom">
     <div class="row">
-      <select id="lvDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <select id="lvDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select>
+      <select id="lvRes"><option value="720">720p</option><option value="1080" selected>1080p</option><option value="2160">4K</option></select>
       <select id="lvFps"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
     <div class="row" style="gap:28px">
@@ -262,7 +266,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
     </div>
   </div>
   <div style="height:96px"></div>
-  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
+  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
   <input type="file" id="filePick" accept="video/*" style="display:none">
 </section>
 
@@ -279,7 +283,7 @@ window.addEventListener('unhandledrejection',e=>toast('오류: '+((e.reason&&e.r
 window.addEventListener('error',e=>toast('오류: '+e.message,5000));
 
 /* ---------- 화면 꺼짐 방지 ---------- */
-let wl=null,nosleep=null;S.awake='';
+let wl=null,nosleep=null;S.awake='';S.photoQ=[];
 function awakeUI(){
   const el=$('#awakeStat');if(!el)return;
   el.textContent=S.awake==='wl'?'🔆 화면 꺼짐 방지 켜짐':S.awake==='video'?'🔆 화면 꺼짐 방지 켜짐 (보조 방식)':'⚠️ 자동 꺼짐 방지를 못 켰어요 · 설정 > 화면 및 밝기 > 자동 잠금 "안 함"';
@@ -330,6 +334,13 @@ keepAwake();
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));}
 function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',ms);}
 function beep(f=880,d=.12){try{const ac=beep.ac||(beep.ac=new(window.AudioContext||window.webkitAudioContext)());if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.25;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
+function recBitrate(){
+  const t=S.stream&&S.stream.getVideoTracks()[0];const st=t?t.getSettings():{};
+  const px=(st.width||1280)*(st.height||720);
+  let b=px>=3000*1500?40e6:px>=1800*1000?18e6:px>=1200*700?10e6:6e6;
+  if((st.frameRate||30)>=50)b*=1.3;
+  return Math.round(b);
+}
 function pickMime(){const c=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];return c.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';}
 function showMsg(t,ms){const m=$('#camMsg');m.textContent=t;m.style.display='block';if(ms){clearTimeout(showMsg.h);showMsg.h=setTimeout(()=>m.style.display='none',ms);}}
 function hideMsg(){$('#camMsg').style.display='none';}
@@ -353,7 +364,8 @@ async function openCamera(){
   if(!S.stream){$('#pillFps').textContent='카메라 꺼짐';camFail(err);return false;}
   const track=S.stream.getVideoTracks()[0];
   // 2) 켜진 뒤에 해상도/fps 상향 시도 (실패해도 무시)
-  try{await track.applyConstraints({width:{ideal:1280},height:{ideal:720},frameRate:{ideal:fps}});}catch(e){}
+  const rh=+$('#resSel').value||1080,rw=Math.round(rh*16/9);
+  try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh},frameRate:{ideal:fps}});}catch(e){try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh}});}catch(e2){}}
   const v=$('#preview');v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');v.srcObject=S.stream;
   try{await v.play();}catch(e){}
   const ok=await waitVideo(v);
@@ -477,8 +489,21 @@ function sendLive(){
   if(S.role!=='cam'||!S.peer||!S.remoteId||!S.stream||!connected())return;
   try{if(S.call)S.call.close();}catch(e){}
   try{S.call=S.peer.call(S.remoteId,S.stream);}catch(e){console.warn(e);}
+  setTimeout(()=>tuneLive(S.call),1500);setTimeout(()=>tuneLive(S.call),5000);
 }
 function sendInfo(){if(S.role==='cam'&&connected())S.conn.send({type:'info',text:$('#pillFps').textContent});}
+function tuneLive(call){
+  try{
+    const pc=call&&call.peerConnection;if(!pc)return;
+    pc.getSenders().forEach(async s=>{
+      if(!s.track||s.track.kind!=='video')return;
+      const p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];
+      p.encodings[0].maxBitrate=3e6;
+      const h=s.track.getSettings().height||0;if(h>720)p.encodings[0].scaleResolutionDownBy=h/720;
+      await s.setParameters(p);
+    });
+  }catch(e){}
+}
 function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style.display='block';}else m.style.display='none';}
 function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
 function goLive(){
@@ -504,7 +529,7 @@ function onData(d){
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
-  else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){$('#fpsSel').value=String(d.fps);openCamera();}}
+  else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){if(d.fps)$('#fpsSel').value=String(d.fps);if(d.res)$('#resSel').value=String(d.res);openCamera();}}
   else if(d.type==='info'){$('#lvInfo').textContent='촬영폰 · '+d.text;}
   else if(d.type==='state'){S.stateText=d.s==='count'?'📷 촬영 준비 · 3초 뒤 시작':d.s==='rec'?'🔴 촬영 중…':'';setStage(S.stateText);monUI();liveState(d.s);}
   else if(d.type==='sending'){S.stateText='📥 영상 수신 중…';setStage(S.stateText);monUI();liveState('idle');lvMsg('📥 영상 수신 중…');}
@@ -539,7 +564,7 @@ function doStart(dur){
   S.chunks=[];
   const mime=pickMime();
   let r;
-  try{r=new MediaRecorder(S.stream,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{videoBitsPerSecond:8e6});}
+  try{r=new MediaRecorder(S.stream,mime?{mimeType:mime,videoBitsPerSecond:recBitrate()}:{videoBitsPerSecond:recBitrate()});}
   catch(e){try{r=new MediaRecorder(S.stream);}catch(e2){toast('이 브라우저는 녹화를 지원하지 않아요');S.recording=false;return;}}
   S.rec=r;
   r.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};
@@ -563,7 +588,7 @@ async function finishRec(mime){
   if(S.role==='cam'){
     registerClip({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.fps});toast('💾 이 폰에 자동 저장됨');
     if(!connected()){showMsg('확인폰과 연결이 끊겨서 전송하지 못했어요 (영상은 이 폰에 저장됨)',4000);return;}
-    showMsg('📤 확인폰으로 전송 중…');
+    showMsg('📤 확인폰으로 전송 중… ('+(blob.size/1048576).toFixed(1)+'MB)');
     try{
       S.conn.send({type:'sending'});
       const buf=await blob.arrayBuffer();
@@ -580,16 +605,38 @@ async function finishRec(mime){
 function setStage(t){const m=$('#stageMsg');if(!m)return;if(t){m.textContent=t;m.style.display='block';}else m.style.display='none';}
 function registerClip(c){
   c.id=Date.now();c.n=H.reduce((a,x)=>Math.max(a,x.n||0),0)+1;c.time=new Date();c.frames=null;c.m=null;
-  H.push(c);DB.put(toRec(c));trimStore();renderHist();return c;
+  H.push(c);DB.put(toRec(c));trimStore();renderHist();S.photoQ.push(c);updatePhotoUI();return c;
 }
 function addSwing(c){
   registerClip(c);S.stateText='';setStage('');monUI();liveState('idle');lvMsg('');
+  if((S.photoHint=(S.photoHint||0)+1)<=2)toast('📷 위쪽 "사진첩에 저장" 버튼을 누르면 사진첩에 저장돼요',4500);
   openReview(c,H.length>1?H[H.length-2]:null,{auto:true});
 }
 function trimStore(){while(H.length>60){const o=H.shift();DB.del(o.id);try{URL.revokeObjectURL(o.url);}catch(e){}}}
 function deleteClip(c){
   if(!confirm(`스윙 #${c.n}을(를) 삭제할까요?`))return;
-  const i=H.indexOf(c);if(i>=0)H.splice(i,1);DB.del(c.id);try{URL.revokeObjectURL(c.url);}catch(e){}renderHist();
+  const i=H.indexOf(c);if(i>=0)H.splice(i,1);S.photoQ=S.photoQ.filter(x=>x!==c);DB.del(c.id);try{URL.revokeObjectURL(c.url);}catch(e){}renderHist();
+}
+function updatePhotoUI(){
+  const n=S.photoQ.length,t=`📷 사진첩에 저장${n>1?' ('+n+')':''}`;
+  const a=$('#photoBtn'),l=$('#lvPhoto'),b=$('#bSave');
+  if(a){a.style.display=(S.role==='cam'&&n>0)?'block':'none';a.textContent=t;}
+  if(l){l.style.display=(S.role==='view'&&n>0)?'block':'none';l.textContent=t;}
+  if(b){b.textContent=n>0?'📷 사진첩에 저장':'내보내기';b.classList.toggle('on',n>0);}
+}
+async function savePhotos(){
+  const list=S.photoQ.slice();
+  if(!list.length){toast('저장할 새 영상이 없어요');return;}
+  const files=list.map(c=>new File([c.blob],`swing_${c.n}_${c.id}.${(c.mime||'').includes('mp4')?'mp4':'webm'}`,{type:c.mime||'video/mp4'}));
+  try{
+    if(navigator.canShare&&navigator.canShare({files})){
+      await navigator.share({files,title:'SwingLab 스윙'});
+      S.photoQ=S.photoQ.filter(c=>!list.includes(c));updatePhotoUI();
+      toast('공유 창에서 "비디오 저장"을 눌렀다면 사진첩에 저장됐어요',4500);return;
+    }
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  for(const c of list){await exportClip(c);}
+  S.photoQ=S.photoQ.filter(c=>!list.includes(c));updatePhotoUI();
 }
 async function exportClip(c){
   const ext=(c.mime||'').includes('mp4')?'mp4':'webm';
@@ -642,7 +689,7 @@ async function loadSlot(key,clip){
 }
 function layoutPanes(){$('#panes').classList.toggle('single',false);}
 async function openReview(a,b,opts={}){
-  show('review');closeCamera();
+  show('review');closeCamera();updatePhotoUI();
   $('#recBar').style.display=(a&&(S.role==='view'||S.role==='solo'))?'flex':'none';
   $('#bRecAgain').textContent=S.role==='view'?'● 다시 촬영 (A폰)':'● 다시 촬영';
   $('#bToLive').style.display=(S.role==='view'&&connected())?'inline-block':'none';
@@ -753,7 +800,9 @@ $('#filePick').onchange=async e=>{
   if(pickTarget==='B'&&!compare)setCompare(true);
   align=0;seekAll();updateUI();
 };
-$('#bSave').onclick=()=>{const c=SL.A.clip||SL.B.clip;if(c)exportClip(c);};
+$('#bSave').onclick=()=>{if(S.photoQ.length){savePhotos();return;}const c=SL.A.clip||SL.B.clip;if(c)exportClip(c);};
+$('#photoBtn').onclick=savePhotos;
+$('#lvPhoto').onclick=savePhotos;
 $('#rBack').onclick=()=>{
   setPlaying(false);
   if(S.role==='view'&&connected()&&!S.savedMode){goLive();}
@@ -973,6 +1022,7 @@ $('#lvRec').onclick=()=>{
 };
 $('#lvFlip').onclick=()=>{if(connected())S.conn.send({type:'flip'});else toast('촬영폰이 연결되어 있지 않아요');};
 $('#lvFps').onchange=()=>{if(connected())S.conn.send({type:'cfg',fps:+$('#lvFps').value});};
+$('#lvRes').onchange=()=>{if(connected())S.conn.send({type:'cfg',res:+$('#lvRes').value});};
 $('#lvHist').onclick=()=>{setMonitorMode(false);show('monitor');monUI();renderHist();};
 $('#lvExit').onclick=leaveAll;
 $('#bGoLive').onclick=()=>goLive();
@@ -981,6 +1031,7 @@ $('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메
 $('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';startViewer();};
 $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
 $('#fpsSel').onchange=()=>openCamera();
+$('#resSel').onchange=()=>openCamera();
 $('#bRec').onclick=onRecBtn;
 loadSaved();
 </script>
