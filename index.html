@@ -293,7 +293,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v26</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v27</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1024,9 +1024,9 @@ async function savePhotos(){
   const files=list.map(c=>new File([c.blob],`swing_${c.n}_${c.id}.${(c.mime||'').includes('mp4')?'mp4':'webm'}`,{type:c.mime||'video/mp4'}));
   try{
     if(navigator.canShare&&navigator.canShare({files})){
-      await navigator.share({files,title:'SwingLab 스윙'});
+      await navigator.share({files});
       S.photoQ=S.photoQ.filter(c=>!list.includes(c));updatePhotoUI();
-      toast('공유 창에서 "비디오 저장"을 눌렀다면 사진첩에 저장됐어요',4500);return;
+      toast('✅ 공유 창에서 "비디오 저장"을 누르면 사진첩에 들어가요',4000);return;
     }
   }catch(e){if(e&&e.name==='AbortError')return;}
   for(const c of list){await exportClip(c);}
@@ -1035,7 +1035,7 @@ async function savePhotos(){
 async function exportClip(c){
   const ext=(c.mime||'').includes('mp4')?'mp4':'webm';
   const file=new File([c.blob],`swing_${c.n||''}_${c.id||Date.now()}.${ext}`,{type:c.mime||'video/mp4'});
-  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'SwingLab 스윙'});return;}}
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return;}}
   catch(e){if(e&&e.name==='AbortError')return;}
   const a=document.createElement('a');a.href=c.url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
 }
