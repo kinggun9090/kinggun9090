@@ -47,6 +47,24 @@ input[type=text],input[type=tel],select{background:var(--card);border:1px solid 
 .msg{position:absolute;left:24px;right:24px;top:22%;background:rgba(0,0,0,.8);padding:16px;border-radius:14px;text-align:center;z-index:4;display:none;line-height:1.55;white-space:pre-line;font-size:15px;word-break:keep-all}
 #preview,#liveVideo{position:fixed!important;left:0;top:0;width:100vw!important;height:100vh!important;height:100lvh!important;max-width:none!important;max-height:none!important;transform:translateZ(0)}
 #photoBtn{position:fixed;top:calc(env(safe-area-inset-top) + 100px);right:10px;width:auto!important;padding:8px 12px;font-size:13px;border-radius:999px;z-index:6}
+
+/* ---- 통일된 텍스트 칸 ---- */
+.chip,.recbar select,.top select,.bottom select,#speeds select{height:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap;line-height:1}
+.recbar .chip,.recbar select{height:50px;min-height:50px;padding:0 14px;font-size:14px;border-radius:14px}
+.recbar .recgo{height:50px;padding:0 12px;display:flex;align-items:center;justify-content:center}
+#bLefty.on{background:var(--acc);color:#031a18;border-color:var(--acc)}
+.pill{height:30px;box-sizing:border-box;display:inline-flex;align-items:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.hud{grid-auto-rows:1fr}
+.tile{min-height:104px;display:flex;flex-direction:column;justify-content:center;align-items:center;box-sizing:border-box;overflow:hidden}
+.tile .v,.tile .l,.tile .k,.tile .d{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .v{font-size:26px}
+#speeds{display:grid;grid-template-columns:repeat(4,1fr) 1.6fr;gap:6px}
+#speeds .chip,#speeds select{width:100%;padding:0 4px;font-size:13px}
+.ctl .scroll{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ctl .scroll .chip{width:100%;padding:0 6px;font-size:13px}
+.kv{min-height:34px;align-items:center}
+#review>*,#monitor>*{flex-shrink:0}
+#review,#monitor{-webkit-overflow-scrolling:touch}
 /* monitor */
 .bigcode{font-size:56px;font-weight:800;letter-spacing:8px;color:var(--acc);text-align:center;margin:4px 0}
 .hist{display:flex;flex-direction:column;gap:8px}
@@ -101,7 +119,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
 .hudhead{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 8px;font-size:11px;letter-spacing:1.6px;color:var(--dim)}
 .hudhead b{color:var(--txt);font-weight:600}
 .tempo{margin:8px 2px 0;font-size:12.5px;color:var(--dim);text-align:center}
-.res{margin:10px 12px}
+.res{margin:10px 12px;scroll-margin-bottom:160px}
 
 .recbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:10px;align-items:center;justify-content:center;padding:22px 14px calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(180deg,rgba(7,9,12,0),rgba(7,9,12,.94) 40%)}
 .recgo{flex:1;max-width:320px;border:none;border-radius:999px;background:var(--red);color:#fff;font-size:17px;font-weight:700;padding:15px;letter-spacing:.5px;box-shadow:0 6px 24px rgba(255,90,90,.35)}
@@ -295,12 +313,12 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
       <button class="chip sm" id="bAlignOff">정렬 해제</button>
     </div>
     <div class="row">
-      <label class="chk"><input type="checkbox" id="lefty"> 왼손잡이</label>
+      <label class="chk" style="display:none"><input type="checkbox" id="lefty"> 왼손잡이</label>
       <button class="btn" id="bAnalyze" style="text-align:center;padding:11px;font-size:14px">🧠 자세 분석 다시 실행</button>
     </div>
   </div>
-  <div style="height:96px"></div>
-  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
+  <div style="height:calc(150px + env(safe-area-inset-bottom))"></div>
+  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select><button class="chip" id="bLefty" aria-pressed="false">🏌️ 왼손</button><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
   <input type="file" id="filePick" accept="video/*" style="display:none">
 </section>
 
@@ -480,7 +498,7 @@ function setupConn(c){
   if(!connected())S.conn=c;
   c.on('open',()=>{
     if(S.conn!==c){if(connected()){try{c.close();}catch(e){}return;}S.conn=c;}
-    S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');
+    S.lastHb=performance.now();S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');
     if(S.role==='cam'){sendLive();sendInfo();}
     if(S.role==='view'&&!S.savedMode&&$('#monitor').classList.contains('active'))goLive();
   });
@@ -1244,6 +1262,29 @@ function applyFit(){
   const t=fitContain?'▢ 전체 보기':'▣ 꽉 채우기';$('#fitBtn').textContent=t;$('#lvFit').textContent=t;
 }
 function toggleFit(){fitContain=!fitContain;try{localStorage.setItem('swinglab_fit',fitContain?'contain':'cover');}catch(e){}applyFit();}
+
+/* 왼손잡이 (하단 바) */
+(function(){
+  let on=false;try{on=localStorage.getItem('swinglab_lefty')==='1';}catch(e){}
+  const b=$('#bLefty'),c=$('#lefty');
+  function paint(){c.checked=on;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.textContent=on?'🏌️ 왼손잡이 ✓':'🏌️ 왼손';}
+  paint();
+  b.onclick=()=>{on=!on;try{localStorage.setItem('swinglab_lefty',on?'1':'0');}catch(e){}paint();toast(on?'왼손잡이 기준으로 분석해요':'오른손잡이 기준으로 분석해요');const a=$('#bAnalyze');if(a&&a.onclick)a.click();};
+})();
+/* 다른 앱 갔다 와도 연결 유지: 돌아오면 즉시 복구 + 죽은 연결 감지 */
+function revive(){
+  keepAwake();
+  const dead=connected()&&performance.now()-(S.lastHb||0)>5000;
+  if(dead){try{S.conn.close();}catch(e){}}
+  if(connected())return;
+  S.viewBusy=false;S.ntBusy=false;S.hostBusy=false;
+  if(S.role==='view'&&S.viewWanted){setNet('다시 연결하는 중…');viewerConnect();}
+  if(S.role==='cam'&&S.hostWanted){ntHostStart();if(!S.peer||S.peer.destroyed||S.peer.disconnected)makeHost();}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){setTimeout(revive,200);setTimeout(revive,3000);}});
+window.addEventListener('pageshow',()=>setTimeout(revive,200));
+window.addEventListener('online',()=>setTimeout(revive,300));
+setInterval(()=>{if(connected()&&document.visibilityState==='visible'&&performance.now()-(S.lastHb||0)>9000){try{S.conn.close();}catch(e){}}},3000);
 forceFull();$('#fitBtn').onclick=toggleFit;$('#lvFit').onclick=toggleFit;applyFit();
 (function(){const sa=window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
   if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!sa)$('#a2hs').style.display='block';})();
