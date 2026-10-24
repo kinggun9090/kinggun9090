@@ -102,6 +102,11 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
 .recgo:active{transform:scale(.97)}
 .hrow{display:flex;gap:8px;align-items:center}
 .hrow .hitem{width:auto;flex:1}
+
+#live{background:#000}
+#liveVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#lvCount{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:140px;font-weight:800;color:#fff;text-shadow:0 4px 30px #000;z-index:2;pointer-events:none}
+.lvrec{position:absolute;top:calc(env(safe-area-inset-top) + 52px);left:12px;z-index:3;background:rgba(255,90,90,.92);color:#fff;font-weight:700;font-size:13px;letter-spacing:1px;padding:5px 11px;border-radius:999px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -126,7 +131,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
     <b>사용 순서</b><br>
     1. B폰(확인용)에서 "확인 화면 시작" → 코드 확인<br>
     2. A폰(촬영용)에서 코드 입력 → 삼각대에 세우기<br>
-    3. A폰 촬영 버튼, 또는 B폰의 "원격 촬영"으로 시작<br>
+    3. 연결되면 B폰이 촬영폰의 <b>실시간 화면</b>으로 바뀌어요 · 거기서 촬영 버튼으로 바로 조작<br>
     4. 스윙이 끝나면 B폰에 슬로우 모션 + 자세 분석이 자동으로 표시돼요<br><br>
     <b>촬영 팁</b> 정면 또는 공 뒤쪽, 허리 높이, 3m 거리, 전신이 보이게. 같은 Wi-Fi가 가장 안정적이에요.<br>
     공 속도·스핀 같은 레이더 수치는 측정할 수 없고, 분석 값은 카메라 기반 <b>추정값</b>이에요.
@@ -143,6 +148,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
       <span class="pill bad" id="monStatus">촬영폰 대기 중…</span>
       <div style="margin-top:12px"><button class="chip" id="monRetry" style="display:none">🔄 다시 접속</button></div>
       <div class="status" id="awakeStat" style="margin-top:10px"></div>
+      <div style="margin-top:12px"><button class="chip on" id="bGoLive" style="display:none">📡 촬영폰 라이브 화면 열기</button></div>
     </div>
     <div class="row" id="monRemoteRow">
       <select id="monDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
@@ -175,6 +181,30 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
       <button class="round" id="bBack">✕</button>
       <button class="recbtn" id="bRec" aria-label="촬영"></button>
       <button class="round" id="bFlip">🔄</button>
+    </div>
+  </div>
+</section>
+
+<!-- 라이브 (B폰: 촬영폰 실시간 화면 + 원격 조작) -->
+<section id="live" class="screen">
+  <video id="liveVideo" playsinline muted autoplay></video>
+  <div class="top">
+    <button class="chip sm" id="lvExit">✕ 종료</button>
+    <span class="pill ok">● LIVE</span>
+    <span class="pill" id="lvInfo">촬영폰</span>
+  </div>
+  <div id="lvCount"></div>
+  <div class="lvrec" id="lvRecInd" style="display:none">● REC <span id="lvTimer">0:00</span></div>
+  <div class="msg" id="lvMsg" style="display:block">📡 촬영폰 화면 불러오는 중…</div>
+  <div class="bottom">
+    <div class="row">
+      <select id="lvDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <select id="lvFps"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
+    </div>
+    <div class="row" style="gap:28px">
+      <button class="round" id="lvHist" aria-label="스윙 기록">🗂</button>
+      <button class="recbtn" id="lvRec" aria-label="촬영"></button>
+      <button class="round" id="lvFlip" aria-label="카메라 전환">🔄</button>
     </div>
   </div>
 </section>
@@ -232,7 +262,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
     </div>
   </div>
   <div style="height:96px"></div>
-  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
+  <div class="recbar" id="recBar" style="display:none"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
   <input type="file" id="filePick" accept="video/*" style="display:none">
 </section>
 
@@ -333,6 +363,7 @@ async function openCamera(){
   S.fps=Math.round(st.frameRate||30);
   $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps`;
   try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
+  if(S.role==='cam'){sendLive();sendInfo();}
   return true;
 }
 function camFail(err){
@@ -360,6 +391,7 @@ function monUI(){
   $('#bigCode').textContent=(S.code&&S.peerReady)?S.code:'접속 중…';
   $('#bigCode').style.fontSize=(S.code&&S.peerReady)?'':'28px';
   $('#monRetry').style.display=S.peerReady?'none':'inline-block';
+  $('#bGoLive').style.display=(S.role==='view'&&connected()&&!S.savedMode)?'inline-block':'none';
   const m=$('#monStatus');
   m.className='pill '+(connected()?'ok':'bad');
   m.textContent=connected()?(S.stateText||'✅ 촬영폰 연결됨'):(S.peerReady?'촬영폰 대기 중…':(S.net||'서버 접속 중…'));
@@ -373,6 +405,7 @@ function leaveAll(){
   closeCamera();
   try{if(S.conn)S.conn.close();}catch(e){}
   try{if(S.peer)S.peer.destroy();}catch(e){}
+  try{if(S.call)S.call.close();}catch(e){}S.call=null;$('#liveVideo').srcObject=null;liveState('idle');
   S.conn=null;S.peer=null;S.role='solo';S.savedMode=false;S.stateText='';hideMsg();show('home');
 }
 
@@ -392,9 +425,12 @@ async function ensurePeer(){
 function setNet(t){S.net=t;camUI();monUI();}
 function setupConn(c){
   S.conn=c;
-  c.on('open',()=>{S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');});
+  c.on('open',()=>{S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');
+    if(S.role==='cam'){sendLive();sendInfo();}
+    if(S.role==='view'&&!S.savedMode&&$('#monitor').classList.contains('active'))goLive();
+  });
   c.on('data',onData);
-  c.on('close',()=>{camUI();monUI();toast('연결이 끊겼어요');});
+  c.on('close',()=>{camUI();monUI();toast('연결이 끊겼어요');liveState('idle');if(S.role==='view'&&$('#live').classList.contains('active'))show('monitor');});
   c.on('error',e=>toast('연결 오류: '+e));
 }
 async function startViewer(tries=0){
@@ -404,6 +440,11 @@ async function startViewer(tries=0){
   const p=new Peer('swinglab-'+code,{config:ICE});S.peer=p;
   p.on('open',()=>{S.code=code;S.peerReady=true;S.net='';monUI();});
   p.on('connection',c=>setupConn(c));
+  p.on('call',call=>{
+    try{if(S.call)S.call.close();}catch(e){}
+    S.call=call;call.answer();
+    call.on('stream',st=>attachLive(st));
+  });
   p.on('disconnected',()=>{S.peerReady=false;setNet('서버 연결 끊김 · 재접속 중…');try{p.reconnect();}catch(e){}});
   p.on('error',e=>{
     if(e.type==='unavailable-id'&&tries<5){try{p.destroy();}catch(_){}startViewer(tries+1);return;}
@@ -424,18 +465,49 @@ async function startCamPeer(code,attempt=0){
   };
   p.on('open',()=>{
     setNet('확인폰 찾는 중…');
-    const c=p.connect('swinglab-'+code,{reliable:true});
+    S.remoteId='swinglab-'+code;const c=p.connect(S.remoteId,{reliable:true});
     setupConn(c);
     c.on('open',()=>{done=true;});
     setTimeout(()=>{if(!connected())fail('확인폰에 연결하지 못했어요');},12000);
   });
   p.on('error',e=>{if(e.type==='browser-incompatible'){done=true;setNet('이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요');return;}fail(e.type==='peer-unavailable'?'코드를 찾을 수 없어요 · 확인폰 코드 확인':'서버 오류: '+e.type);});
 }
+/* ---------- 실시간 화면 (A → B) ---------- */
+function sendLive(){
+  if(S.role!=='cam'||!S.peer||!S.remoteId||!S.stream||!connected())return;
+  try{if(S.call)S.call.close();}catch(e){}
+  try{S.call=S.peer.call(S.remoteId,S.stream);}catch(e){console.warn(e);}
+}
+function sendInfo(){if(S.role==='cam'&&connected())S.conn.send({type:'info',text:$('#pillFps').textContent});}
+function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style.display='block';}else m.style.display='none';}
+function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
+function goLive(){
+  show('live');
+  if(!$('#liveVideo').srcObject)lvMsg('📡 촬영폰 화면 불러오는 중…');
+  clearTimeout(S.lvHint);
+  S.lvHint=setTimeout(()=>{if(!$('#liveVideo').srcObject&&$('#live').classList.contains('active'))lvMsg('영상이 아직 안 들어와요\n두 폰이 같은 Wi-Fi인지 확인해 주세요');},10000);
+}
+function liveState(s){
+  const cnt=$('#lvCount'),ind=$('#lvRecInd');
+  clearInterval(S.lvTimer);cnt.style.display='none';ind.style.display='none';S.remoteBusy=false;
+  if(s==='count'){
+    S.remoteBusy=true;let n=3;cnt.style.display='flex';cnt.textContent=n;
+    S.lvTimer=setInterval(()=>{n--;if(n<=0){clearInterval(S.lvTimer);cnt.style.display='none';}else cnt.textContent=n;},1000);
+  }else if(s==='rec'){
+    S.remoteBusy=true;ind.style.display='block';const t0=performance.now();$('#lvTimer').textContent='0:00';
+    S.lvTimer=setInterval(()=>{const sec=Math.floor((performance.now()-t0)/1000);$('#lvTimer').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');},250);
+  }
+  $('#lvRec').className='recbtn'+(S.remoteBusy?' stop':'');
+}
 function onData(d){
   if(!d||!d.type)return;
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
-  else if(d.type==='state'){S.stateText=d.s==='count'?'📷 촬영 준비 · 3초 뒤 시작':d.s==='rec'?'🔴 촬영 중…':'';setStage(S.stateText);monUI();}
-  else if(d.type==='sending'){S.stateText='📥 영상 수신 중…';setStage(S.stateText);monUI();}
+  else if(d.type==='stop'){if(S.role==='cam')stopRec();}
+  else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
+  else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){$('#fpsSel').value=String(d.fps);openCamera();}}
+  else if(d.type==='info'){$('#lvInfo').textContent='촬영폰 · '+d.text;}
+  else if(d.type==='state'){S.stateText=d.s==='count'?'📷 촬영 준비 · 3초 뒤 시작':d.s==='rec'?'🔴 촬영 중…':'';setStage(S.stateText);monUI();liveState(d.s);}
+  else if(d.type==='sending'){S.stateText='📥 영상 수신 중…';setStage(S.stateText);monUI();liveState('idle');lvMsg('📥 영상 수신 중…');}
   else if(d.type==='clip'){
     monUI();
     const blob=new Blob([d.buf],{type:d.mime||'video/mp4'});
@@ -482,7 +554,7 @@ function doStart(dur){
 function stopRec(){
   clearTimeout(S.autoStop);
   if(S.rec&&S.rec.state!=='inactive'){S.stopAt=performance.now();S.rec.stop();}
-  else{S.recording=false;$('#count').style.display='none';$('#bRec').className='recbtn';}
+  else{S.recording=false;$('#count').style.display='none';$('#bRec').className='recbtn';if(S.role==='cam'&&connected())S.conn.send({type:'state',s:'idle'});}
 }
 async function finishRec(mime){
   S.recording=false;$('#bRec').className='recbtn';
@@ -511,7 +583,7 @@ function registerClip(c){
   H.push(c);DB.put(toRec(c));trimStore();renderHist();return c;
 }
 function addSwing(c){
-  registerClip(c);S.stateText='';setStage('');monUI();
+  registerClip(c);S.stateText='';setStage('');monUI();liveState('idle');lvMsg('');
   openReview(c,H.length>1?H[H.length-2]:null,{auto:true});
 }
 function trimStore(){while(H.length>60){const o=H.shift();DB.del(o.id);try{URL.revokeObjectURL(o.url);}catch(e){}}}
@@ -573,6 +645,8 @@ async function openReview(a,b,opts={}){
   show('review');closeCamera();
   $('#recBar').style.display=(a&&(S.role==='view'||S.role==='solo'))?'flex':'none';
   $('#bRecAgain').textContent=S.role==='view'?'● 다시 촬영 (A폰)':'● 다시 촬영';
+  $('#bToLive').style.display=(S.role==='view'&&connected())?'inline-block':'none';
+  $('#rBack').textContent=S.role==='view'?'← 라이브':(S.savedMode?'← 목록':'← 홈');
   speed=1;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===1));setCompare(!!opts.compare);
   playing=false;$('#bPlay').textContent='▶';T=0;align=0;$('#res').innerHTML='';
   $('#rTitle').textContent=a&&a.n?`SWING #${a.n}`:'SWING ANALYSIS';
@@ -682,7 +756,8 @@ $('#filePick').onchange=async e=>{
 $('#bSave').onclick=()=>{const c=SL.A.clip||SL.B.clip;if(c)exportClip(c);};
 $('#rBack').onclick=()=>{
   setPlaying(false);
-  if(S.role==='view'||S.savedMode){show('monitor');monUI();renderHist();}
+  if(S.role==='view'&&connected()&&!S.savedMode){goLive();}
+  else if(S.role==='view'||S.savedMode){show('monitor');monUI();renderHist();}
   else{show('home');}
 };
 
@@ -890,6 +965,18 @@ $('#bRemote').onclick=()=>{
   S.conn.send({type:'rec',dur:+$('#monDur').value*1000});toast('촬영폰에서 3초 뒤 촬영이 시작돼요');
 };
 $('#bBack').onclick=leaveAll;
+$('#lvRec').onclick=()=>{
+  if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}
+  beep(1,.01);
+  if(S.remoteBusy){S.conn.send({type:'stop'});return;}
+  S.conn.send({type:'rec',dur:+$('#lvDur').value*1000});
+};
+$('#lvFlip').onclick=()=>{if(connected())S.conn.send({type:'flip'});else toast('촬영폰이 연결되어 있지 않아요');};
+$('#lvFps').onchange=()=>{if(connected())S.conn.send({type:'cfg',fps:+$('#lvFps').value});};
+$('#lvHist').onclick=()=>{setMonitorMode(false);show('monitor');monUI();renderHist();};
+$('#lvExit').onclick=leaveAll;
+$('#bGoLive').onclick=()=>goLive();
+$('#bToLive').onclick=()=>{setPlaying(false);goLive();};
 $('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메라가 켜졌어요');};
 $('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';startViewer();};
 $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
