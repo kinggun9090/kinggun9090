@@ -287,13 +287,23 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #levelLn{width:150px!important;margin-left:-75px!important;margin-top:-1px;height:2px!important;background:rgba(255,255,255,.85)}
 #levelLn.ok{background:#ffd54a!important}
 #cam .stack{bottom:calc(env(safe-area-inset-bottom) + 270px)!important}
+
+/* ======== 시네마틱 ======== */
+#cineOv{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,.45) 100%),linear-gradient(to bottom,rgba(255,175,95,.14),rgba(40,115,160,.16))}
+#cineOv i{position:absolute;left:0;right:0;background:#000;height:0}
+#cineOv #cbT{top:0}#cineOv #cbB{bottom:0}
+#preview.cine{filter:contrast(1.08) saturate(1.1)}
+#modeBar{gap:2px}
+#modeBar button{padding:0 9px}
+#modeBar{width:max-content;max-width:calc(100vw - 32px)}
+#modeBar button{white-space:nowrap;flex:none;min-width:0;writing-mode:horizontal-tb}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v27</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v28</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -357,8 +367,8 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
     <button class="chip sm" id="fitBtn">▣ 꽉 채우기</button>
   </div>
   <div id="count"></div>
-  <div id="gridOv"></div><div id="levelRef"><i></i><i></i></div><div id="levelLn"></div><div id="shotFlash"></div>
-  <div id="modeBar"><button data-m="photo">사진</button><button data-m="video" class="on">비디오</button><button data-m="slomo">슬로모</button></div>
+  <div id="gridOv"></div><div id="levelRef"><i></i><i></i></div><div id="levelLn"></div><div id="shotFlash"></div><div id="cineOv"><i id="cbT"></i><i id="cbB"></i></div>
+  <div id="modeBar"><button data-m="photo">사진</button><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button><button data-m="slomo">슬로모</button></div>
   <div class="toolcol">
     <button class="tb" id="tbGrid" aria-label="격자">▦</button>
     <button class="tb on" id="tbLevel" aria-label="수평선">⎯</button>
@@ -591,7 +601,7 @@ async function openCamera(){
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
   await findLenses();applyFocusMode();initCamTools();
-  S.hasAudio=S.stream.getAudioTracks().length>0;
+  S.hasAudio=S.stream.getAudioTracks().length>0;if(S.mode==='cine')S.fps=24;
   $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps${S.hasAudio?' · 🎤':' · 🔇'}`;
   try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
   if(S.role==='cam'){sendLive();sendInfo();}
@@ -979,20 +989,20 @@ async function finishRec(mime){
   const blob=new Blob(S.chunks,{type:mime});
   const dur=(S.stopAt-S.recStart)/1000;
   if(S.role==='cam'){
-    registerClip({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.fps});toast('💾 이 폰에 자동 저장됨');
+    registerClip({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.recFps||S.fps});toast('💾 이 폰에 자동 저장됨');
     if(!connected()){showMsg('확인폰과 연결이 끊겨서 전송하지 못했어요 (영상은 이 폰에 저장됨)',4000);return;}
     showMsg('📤 확인폰으로 전송 중… ('+(blob.size/1048576).toFixed(1)+'MB)');
     try{
       S.conn.send({type:'sending'});
       const buf=await blob.arrayBuffer();
-      S.conn.send({type:'clip',mime,dur,fps:S.fps,buf});
+      S.conn.send({type:'clip',mime,dur,fps:S.recFps||S.fps,buf});
       showMsg('전송 완료 ✅\n다음 스윙을 준비하세요',2500);
       try{const pv=$('#preview');forceFull();if(pv.srcObject){pv.play().catch(()=>{});}}catch(e){}
     }catch(e){showMsg('전송 실패: '+e,4000);}
     return;
   }
   // 단독 모드
-  addSwing({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.fps});
+  addSwing({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.recFps||S.fps});
 }
 
 /* ---------- 스윙 기록 ---------- */
@@ -1593,21 +1603,39 @@ async function setMode(m,init){
   document.querySelectorAll('#modeBar button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   $('#bRec').classList.toggle('photo',m==='photo');
   $('#durSel').style.visibility=$('#fpsSel').style.visibility=(m==='photo')?'hidden':'visible';
+  $('#cineOv').style.display=m==='cine'?'block':'none';$('#preview').classList.toggle('cine',m==='cine');
+  if(m==='cine')updateCineBars();
   if(init||prev===m)return;
   let reopen=false;
   if(m==='slomo'){const o=[...$('#fpsSel').options].map(x=>+x.value);const best=Math.max(...o);if($('#fpsSel').value!==String(best)||$('#resSel').value!=='1080'){$('#fpsSel').value=String(best);$('#resSel').value='1080';reopen=true;}$('#durSel').value='5';}
+  if(m==='cine'){if($('#fpsSel').value!=='30'){$('#fpsSel').value='30';reopen=true;}$('#durSel').value='8';toast('🎬 시네마틱 · 24fps 필름 룩 (영상 톤·비네팅)',2500);}
   if(m==='video'&&+$('#fpsSel').value>60){$('#fpsSel').value='60';$('#durSel').value='8';reopen=true;}
   if(reopen&&S.stream){await openCamera();if(m==='slomo'&&S.fps<100)toast('이 폰은 슬로모를 '+S.fps+'fps까지 지원해요',3500);}
 }
 document.querySelectorAll('#modeBar button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 (function(){let m='video';try{m=localStorage.getItem('swinglab_mode')||'video';}catch(e){}if(m==='slomo')m='video';setMode(m,true);})();
+function updateCineBars(){const w=innerWidth,h=innerHeight,v=$('#preview');const land=v.videoWidth>v.videoHeight&&w>h;const bh=land?Math.max(0,(h-w/2.39)/2):0;$('#cbT').style.height=$('#cbB').style.height=bh+'px';}
+addEventListener('resize',updateCineBars);$('#preview').addEventListener('loadedmetadata',updateCineBars);
 // 소프트웨어 줌 녹화: 확대된 화면을 캔버스로 그려 녹화
+function cineGrade(cx,W,H){
+  cx.save();
+  cx.globalCompositeOperation='overlay';
+  const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(255,175,95,.30)');g.addColorStop(1,'rgba(40,115,160,.30)');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  cx.globalCompositeOperation='source-over';
+  const r=cx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.hypot(W,H)*.55);
+  r.addColorStop(0,'rgba(0,0,0,0)');r.addColorStop(1,'rgba(0,0,0,.5)');cx.fillStyle=r;cx.fillRect(0,0,W,H);
+  if(W>H){const bh=Math.max(0,(H-W/2.39)/2);cx.fillStyle='#000';cx.fillRect(0,0,W,bh);cx.fillRect(0,H-bh,W,bh);}
+  cx.restore();
+}
 function makeRecStream(){
-  if(!(S.swScale>1.001))return S.stream;
-  const v=$('#preview'),W=v.videoWidth,H=v.videoHeight,z=S.swScale;
+  const cine=S.mode==='cine',z=S.swScale>1.001?S.swScale:1;
+  S.recFps=cine?24:null;
+  if(!cine&&z===1)return S.stream;
+  const v=$('#preview'),W=v.videoWidth,H=v.videoHeight;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');let run=true;
-  (function d(){if(!run)return;const sw=W/z,sh=H/z;try{cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);}catch(e){}requestAnimationFrame(d);})();
-  const out=cv.captureStream(S.fps||30);S.stream.getAudioTracks().forEach(a=>out.addTrack(a));
+  (function d(){if(!run)return;const sw=W/z,sh=H/z;try{cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);if(cine)cineGrade(cx,W,H);}catch(e){}requestAnimationFrame(d);})();
+  const out=cv.captureStream(cine?24:(S.fps||30));S.stream.getAudioTracks().forEach(a=>out.addTrack(a));
   S.recCleanup=()=>{run=false;};return out;
 }
 /* ---------- 초점 (탭해서 초점 / 연속 자동초점) ---------- */
