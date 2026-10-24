@@ -190,19 +190,33 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 .msg,.note,.tempo{font-size:var(--fs)!important;line-height:1.5}
 .btn{font-size:15px!important;font-weight:600!important}
 .tile .l{letter-spacing:.5px}
+
+/* ---- 메인: 마지막으로 들어간 칸 색 ---- */
+#home .btn{border-color:var(--line)!important;background:var(--card)!important;color:var(--txt)}
+#home .btn.last{background:rgba(79,209,197,.16)!important;border-color:var(--acc)!important;color:var(--acc)}
+#home .btn.last small{color:var(--txt)}
+/* ---- 촬영폰: 작은 글씨, 겹침 없음 ---- */
+#cam .top{gap:5px;row-gap:5px}
+#cam .pill,#cam .chip{font-size:11px!important;height:28px!important;min-height:28px!important;padding:0 9px!important;max-width:100%}
+#cam #pillConn{flex:1 1 100%;font-size:11px!important}
+#cam select{font-size:12px!important;height:32px!important;min-height:32px!important;padding:0 8px!important}
+#cam .msg{font-size:12px!important;padding:10px 12px}
+#cam .stack{top:calc(env(safe-area-inset-top) + 112px)!important}
+#cam #photoBtn{top:calc(env(safe-area-inset-top) + 84px);font-size:11px!important;padding:0 10px!important;height:28px!important}
+#cam #camRetry{font-size:13px!important}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v19</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v20</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
   <div class="tips" id="envWarn" style="display:none;border-color:var(--warn);color:var(--txt);margin-top:0">⚠️ <b>이 화면에서는 카메라와 폰 간 연결이 막혀 있어요.</b><br>앱 안의 미리보기가 아니라, <b>Safari/Chrome 주소창에서 이 페이지 주소를 직접 열어야</b> 동작해요. (HTTPS 주소로 호스팅 필요)</div>
   <div class="col">
-    <button class="btn pri" id="bView">📺 B폰 · 확인 화면 연결<small>촬영폰(A)의 비밀번호를 입력하면 실시간 화면으로 바뀌어요</small></button>
+    <button class="btn" id="bView">📺 B폰 · 확인 화면 연결<small>촬영폰(A)의 비밀번호를 입력하면 실시간 화면으로 바뀌어요</small></button>
     <div class="row" id="viewRow" style="display:none">
       <input type="tel" id="pinSet" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="촬영폰 비밀번호 4자리" style="flex:1">
       <button class="chip on" id="bViewGo" style="padding:13px 20px">연결</button>
@@ -361,11 +375,11 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
       
     </div>
   </div>
-  <div style="height:calc(230px + env(safe-area-inset-bottom))"></div>
+  <div style="height:calc(130px + env(safe-area-inset-bottom))"></div>
   <div class="recbar" id="recBar" style="display:none">
-    <div class="rr"><button class="chip" id="bLefty" aria-pressed="false">🏌️ 왼손</button><button class="chip" id="bAnalyze" style="flex:1">🧠 자세 분석 다시 실행</button></div>
     <div class="rr"><select id="rDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="10">10초</option><option value="12">12초</option></select><button class="chip" id="bToLive" style="display:none">📡 라이브</button><button class="recgo" id="bRecAgain">● 다시 촬영</button></div>
   </div>
+  <div style="display:none"><button id="bLefty" aria-pressed="false"></button><button id="bAnalyze">🧠 자세 분석 다시 실행</button></div>
   <input type="file" id="filePick" accept="video/*" style="display:none">
 </section>
 
@@ -1345,6 +1359,15 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pageshow',()=>setTimeout(revive,200));
 window.addEventListener('online',()=>setTimeout(revive,300));
 setInterval(()=>{if(connected()&&document.visibilityState==='visible'&&performance.now()-(S.lastHb||0)>9000){try{S.conn.close();}catch(e){}}},3000);
+
+/* 마지막으로 들어간 칸 표시 */
+function markLast(id){try{localStorage.setItem('swinglab_last',id);}catch(e){}paintLast();}
+function paintLast(){let l='';try{l=localStorage.getItem('swinglab_last')||'';}catch(e){}['bView','bCam','bSolo','bImport'].forEach(i=>{const b=$('#'+i);if(b)b.classList.toggle('last',i===l);});}
+paintLast();
+$('#bViewGo').addEventListener('click',()=>{if(/^\d{4}$/.test($('#pinSet').value.trim()))markLast('bView');});
+$('#bJoinGo').addEventListener('click',()=>{if(/^\d{4}$/.test($('#codeIn').value.trim()))markLast('bCam');});
+$('#bSolo').addEventListener('click',()=>markLast('bSolo'));
+$('#bImport').addEventListener('click',()=>markLast('bImport'));
 forceFull();$('#fitBtn').onclick=toggleFit;$('#lvFit').onclick=toggleFit;applyFit();
 (function(){const sa=window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
   if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!sa)$('#a2hs').style.display='block';})();
