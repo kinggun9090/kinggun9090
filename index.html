@@ -117,10 +117,14 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="envWarn" style="display:none;border-color:var(--warn);color:var(--txt);margin-top:0">⚠️ <b>이 화면에서는 카메라와 폰 간 연결이 막혀 있어요.</b><br>앱 안의 미리보기가 아니라, <b>Safari/Chrome 주소창에서 이 페이지 주소를 직접 열어야</b> 동작해요. (HTTPS 주소로 호스팅 필요)</div>
   <div class="col">
-    <button class="btn pri" id="bView">📺 B폰 · 확인 화면 시작<small>방 코드가 만들어지고, A폰에서 찍은 스윙이 자동으로 뜹니다</small></button>
-    <button class="btn" id="bCam">📷 A폰 · 촬영폰으로 연결<small>B폰에 뜬 4자리 코드를 입력</small></button>
+    <button class="btn pri" id="bView">📺 B폰 · 확인 화면 시작<small>4자리 비밀번호를 정하면, A폰이 연결돼 실시간 화면이 떠요</small></button>
+    <div class="row" id="viewRow" style="display:none">
+      <input type="tel" id="pinSet" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="비밀번호 4자리 설정" style="flex:1">
+      <button class="chip on" id="bViewGo" style="padding:13px 20px">시작</button>
+    </div>
+    <button class="btn" id="bCam">📷 A폰 · 촬영폰으로 연결<small>B폰에서 정한 4자리 비밀번호를 입력</small></button>
     <div class="row" id="joinRow" style="display:none">
-      <input type="tel" id="codeIn" inputmode="numeric" maxlength="4" placeholder="코드 4자리" style="flex:1">
+      <input type="tel" id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="비밀번호 4자리" style="flex:1">
       <button class="chip on" id="bJoinGo" style="padding:13px 20px">연결</button>
     </div>
     <button class="btn" id="bSolo">🎥 폰 1대로 촬영 + 확인<small>찍고 바로 이 폰에서 분석</small></button>
@@ -129,8 +133,8 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   </div>
   <div class="tips">
     <b>사용 순서</b><br>
-    1. B폰(확인용)에서 "확인 화면 시작" → 코드 확인<br>
-    2. A폰(촬영용)에서 코드 입력 → 삼각대에 세우기<br>
+    1. B폰(확인용)에서 "확인 화면 시작" → <b>비밀번호 4자리</b> 정하기<br>
+    2. A폰(촬영용)에서 같은 비밀번호 입력 → 삼각대에 세우기<br>
     3. 연결되면 B폰이 촬영폰의 <b>실시간 화면</b>으로 바뀌어요 · 거기서 촬영 버튼으로 바로 조작<br>
     4. 스윙이 끝나면 B폰에 슬로우 모션 + 자세 분석이 자동으로 표시돼요<br><br>
     <b>촬영 팁</b> 정면 또는 공 뒤쪽, 허리 높이, 3m 거리, 전신이 보이게. 같은 Wi-Fi가 가장 안정적이에요.<br>
@@ -143,7 +147,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
   <div class="bar"><button class="chip sm" id="monBack">← 종료</button><h2 id="monTitle">📺 확인 화면</h2></div>
   <div class="col">
     <div class="card" id="monCodeCard" style="text-align:center">
-      <div style="color:var(--dim);font-size:13px">촬영폰(A)에서 입력할 코드</div>
+      <div style="color:var(--dim);font-size:13px">촬영폰(A)에서 입력할 비밀번호</div>
       <div class="bigcode" id="bigCode">----</div>
       <span class="pill bad" id="monStatus">촬영폰 대기 중…</span>
       <div style="margin-top:12px"><button class="chip" id="monRetry" style="display:none">🔄 다시 접속</button></div>
@@ -400,8 +404,8 @@ function camUI(){
   c.textContent=connected()?'확인폰 연결됨':(S.net||'연결 중…');
 }
 function monUI(){
-  $('#bigCode').textContent=(S.code&&S.peerReady)?S.code:'접속 중…';
-  $('#bigCode').style.fontSize=(S.code&&S.peerReady)?'':'28px';
+  $('#bigCode').textContent=S.code||'----';
+  $('#bigCode').style.fontSize='';
   $('#monRetry').style.display=S.peerReady?'none':'inline-block';
   $('#bGoLive').style.display=(S.role==='view'&&connected()&&!S.savedMode)?'inline-block':'none';
   const m=$('#monStatus');
@@ -445,13 +449,17 @@ function setupConn(c){
   c.on('close',()=>{camUI();monUI();toast('연결이 끊겼어요');liveState('idle');if(S.role==='view'&&$('#live').classList.contains('active'))show('monitor');});
   c.on('error',e=>toast('연결 오류: '+e));
 }
-async function startViewer(tries=0){
-  S.peerReady=false;S.code='';setNet('서버 접속 중…');
+async function startViewer(pin){
+  S.peerReady=false;S.code=pin;setNet('서버 접속 중…');
   if(!await ensurePeer()){setNet('연결 라이브러리를 불러오지 못했어요 · 인터넷 확인');return;}
-  const code=String(Math.floor(1000+Math.random()*9000));
-  const p=new Peer('swinglab-'+code,{config:ICE});S.peer=p;
-  p.on('open',()=>{S.code=code;S.peerReady=true;S.net='';monUI();});
-  p.on('connection',c=>setupConn(c));
+  try{if(S.peer)S.peer.destroy();}catch(e){}
+  const p=new Peer('swinglab-'+pin,{config:ICE});S.peer=p;
+  p.on('open',()=>{S.peerReady=true;S.net='';monUI();});
+  p.on('connection',c=>{
+    // 이미 촬영폰이 연결되어 있으면 다른 연결은 거절
+    if(connected()){try{c.on('open',()=>c.close());}catch(e){}return;}
+    setupConn(c);
+  });
   p.on('call',call=>{
     try{if(S.call)S.call.close();}catch(e){}
     S.call=call;call.answer();
@@ -459,10 +467,11 @@ async function startViewer(tries=0){
   });
   p.on('disconnected',()=>{S.peerReady=false;setNet('서버 연결 끊김 · 재접속 중…');try{p.reconnect();}catch(e){}});
   p.on('error',e=>{
-    if(e.type==='unavailable-id'&&tries<5){try{p.destroy();}catch(_){}startViewer(tries+1);return;}
-    S.peerReady=false;setNet(e.type==='browser-incompatible'?'이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요':'서버 오류: '+e.type+' · 홈에서 다시 시도');
+    S.peerReady=false;
+    if(e.type==='unavailable-id')setNet('이미 사용 중인 비밀번호예요 · 1분 뒤 "다시 접속"을 누르거나, 종료 후 다른 번호로 시작하세요');
+    else setNet(e.type==='browser-incompatible'?'이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요':'서버 오류: '+e.type+' · 홈에서 다시 시도');
   });
-  setTimeout(()=>{if(!S.peerReady&&S.role==='view'&&!S.net.includes('오류'))setNet('서버 접속이 오래 걸려요 · 인터넷/차단 확인');},10000);
+  setTimeout(()=>{if(!S.peerReady&&S.role==='view'&&!S.net.includes('오류')&&!S.net.includes('사용 중'))setNet('서버 접속이 오래 걸려요 · 인터넷/차단 확인');},10000);
 }
 async function startCamPeer(code,attempt=0){
   setNet('서버 접속 중…');
@@ -482,7 +491,7 @@ async function startCamPeer(code,attempt=0){
     c.on('open',()=>{done=true;});
     setTimeout(()=>{if(!connected())fail('확인폰에 연결하지 못했어요');},12000);
   });
-  p.on('error',e=>{if(e.type==='browser-incompatible'){done=true;setNet('이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요');return;}fail(e.type==='peer-unavailable'?'코드를 찾을 수 없어요 · 확인폰 코드 확인':'서버 오류: '+e.type);});
+  p.on('error',e=>{if(e.type==='browser-incompatible'){done=true;setNet('이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요');return;}fail(e.type==='peer-unavailable'?'비밀번호가 맞는지, 확인폰이 먼저 시작됐는지 확인해 주세요':'서버 오류: '+e.type);});
 }
 /* ---------- 실시간 화면 (A → B) ---------- */
 function sendLive(){
@@ -985,7 +994,16 @@ function setMonitorMode(saved){
   $('#monTitle').textContent=saved?'🗂 저장된 스윙':'📺 확인 화면';
 }
 $('#bSaved').onclick=()=>{S.role='solo';setMonitorMode(true);show('monitor');renderHist();};
-$('#bView').onclick=()=>{S.role='view';S.net='';S.stateText='';setMonitorMode(false);show('monitor');monUI();startViewer();};
+const PIN_RE=/^\d{4}$/;
+function rememberPin(v){try{localStorage.setItem('swinglab_pin',v);}catch(e){}}
+try{const sp=localStorage.getItem('swinglab_pin');if(sp){$('#pinSet').value=sp;$('#codeIn').value=sp;}}catch(e){}
+$('#bView').onclick=()=>{$('#joinRow').style.display='none';$('#viewRow').style.display='flex';$('#pinSet').focus();};
+$('#bViewGo').onclick=()=>{
+  const v=$('#pinSet').value.trim();
+  if(!PIN_RE.test(v)){toast('숫자 4자리 비밀번호를 입력하세요');return;}
+  rememberPin(v);
+  S.role='view';S.net='';S.stateText='';setMonitorMode(false);show('monitor');monUI();startViewer(v);
+};
 $('#bRecAgain').onclick=async()=>{
   beep(1,.01);
   const dur=+$('#rDur').value*1000;
@@ -998,9 +1016,10 @@ $('#bRecAgain').onclick=async()=>{
     if(ok){$('#durSel').value=String(dur/1000);startRec(dur);}
   }
 };
-$('#bCam').onclick=()=>{$('#joinRow').style.display='flex';$('#codeIn').focus();};
+$('#bCam').onclick=()=>{$('#viewRow').style.display='none';$('#joinRow').style.display='flex';$('#codeIn').focus();};
 $('#bJoinGo').onclick=async()=>{
-  const c=$('#codeIn').value.trim();if(c.length!==4){toast('4자리 코드를 입력하세요');return;}
+  const c=$('#codeIn').value.trim();if(!/^\d{4}$/.test(c)){toast('숫자 4자리 비밀번호를 입력하세요');return;}
+  rememberPin(c);
   S.role='cam';S.net='';
   startCamPeer(c);          // 카메라와 상관없이 먼저 연결 시도
   await enterCam('cam');
@@ -1028,7 +1047,7 @@ $('#lvExit').onclick=leaveAll;
 $('#bGoLive').onclick=()=>goLive();
 $('#bToLive').onclick=()=>{setPlaying(false);goLive();};
 $('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메라가 켜졌어요');};
-$('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';startViewer();};
+$('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';startViewer(S.code);};
 $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
 $('#fpsSel').onchange=()=>openCamera();
 $('#resSel').onchange=()=>openCamera();
