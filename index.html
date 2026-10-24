@@ -204,13 +204,20 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #cam .stack{top:calc(env(safe-area-inset-top) + 112px)!important}
 #cam #photoBtn{top:calc(env(safe-area-inset-top) + 84px);font-size:11px!important;padding:0 10px!important;height:28px!important}
 #cam #camRetry{font-size:13px!important}
+
+/* ---- REC 표시: 가운데, 다른 텍스트와 같은 크기 ---- */
+#lvRecInd{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 58px);transform:translateX(-50%);z-index:6;justify-content:center;align-items:center;height:var(--ctl)!important;font-size:var(--fs)!important;font-weight:700!important;letter-spacing:0!important;padding:0 14px!important;gap:6px;white-space:nowrap}
+/* ---- 초점 링 ---- */
+#fring{position:fixed;width:74px;height:74px;margin:-37px 0 0 -37px;border:2px solid #ffd54a;border-radius:16px;pointer-events:none;z-index:30;opacity:0;transition:opacity .15s,transform .25s}
+#fring.show{opacity:1;transform:scale(1)}
+#fring.pre{transform:scale(1.5)}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v20</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v21</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -384,6 +391,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 </section>
 
 <div id="toast"></div>
+<div id="fring"></div>
 
 <script>
 'use strict';
@@ -494,6 +502,7 @@ async function openCamera(){
   hideMsg();
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
+  applyFocusMode();
   S.hasAudio=S.stream.getAudioTracks().length>0;
   $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps${S.hasAudio?' · 🎤':' · 🔇'}`;
   try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
@@ -805,7 +814,7 @@ function liveState(s){
     S.remoteBusy=true;let n=3;cnt.style.display='flex';cnt.textContent=n;
     S.lvTimer=setInterval(()=>{n--;if(n<=0){clearInterval(S.lvTimer);cnt.style.display='none';}else cnt.textContent=n;},1000);
   }else if(s==='rec'){
-    S.remoteBusy=true;ind.style.display='block';const t0=performance.now();$('#lvTimer').textContent='0:00';
+    S.remoteBusy=true;ind.style.display='inline-flex';const t0=performance.now();$('#lvTimer').textContent='0:00';
     S.lvTimer=setInterval(()=>{const sec=Math.floor((performance.now()-t0)/1000);$('#lvTimer').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');},250);
   }
   $('#lvRec').className='recbtn'+(S.remoteBusy?' stop':'');
@@ -816,6 +825,7 @@ function onData(d){
   if(d.type==='hb')return;
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
+  else if(d.type==='focus'){if(S.role==='cam'){const v=$('#preview');const r=v.getBoundingClientRect();ring(r.left+d.x*r.width,r.top+d.y*r.height);focusAt(d.x,d.y);}}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
   else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){if(d.fps)$('#fpsSel').value=String(d.fps);if(d.res)$('#resSel').value=String(d.res);openCamera();}}
   else if(d.type==='info'){$('#lvInfo').textContent='촬영폰 · '+d.text;}
@@ -1288,7 +1298,7 @@ $('#bRecAgain').onclick=async()=>{
   const dur=+$('#rDur').value*1000;
   if(S.role==='view'){
     if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}
-    S.conn.send({type:'rec',dur});S.stateText='📷 촬영 준비 · 3초 뒤 시작';setStage(S.stateText);
+    S.conn.send({type:'rec',dur});S.stateText='📷 촬영 준비 · 3초 뒤 시작';setStage(S.stateText);setPlaying(false);goLive();
   }else{
     setPlaying(false);S.role='solo';show('cam');camUI();
     const ok=await openCamera();
@@ -1360,6 +1370,46 @@ window.addEventListener('pageshow',()=>setTimeout(revive,200));
 window.addEventListener('online',()=>setTimeout(revive,300));
 setInterval(()=>{if(connected()&&document.visibilityState==='visible'&&performance.now()-(S.lastHb||0)>9000){try{S.conn.close();}catch(e){}}},3000);
 
+
+/* ---------- 초점 (탭해서 초점 / 연속 자동초점) ---------- */
+function applyFocusMode(){
+  try{
+    const t=S.stream&&S.stream.getVideoTracks()[0];if(!t||!t.getCapabilities)return;
+    const c=t.getCapabilities();S.focusCap=!!(c.focusMode&&c.focusMode.length);
+    if(c.focusMode&&c.focusMode.includes('continuous'))t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+  }catch(e){}
+}
+function ring(x,y){const r=$('#fring');r.style.left=x+'px';r.style.top=y+'px';r.className='pre';void r.offsetWidth;r.className='show';clearTimeout(ring.h);ring.h=setTimeout(()=>{r.className='';},900);}
+async function focusAt(nx,ny){
+  const t=S.stream&&S.stream.getVideoTracks()[0];if(!t)return false;
+  try{
+    const c=t.getCapabilities?t.getCapabilities():{};
+    if(!(c.focusMode&&c.focusMode.length))return false;
+    const adv={pointsOfInterest:[{x:nx,y:ny}]};
+    if(c.focusMode.includes('single-shot'))adv.focusMode='single-shot';else if(c.focusMode.includes('continuous'))adv.focusMode='continuous';
+    await t.applyConstraints({advanced:[adv]});
+    if(c.focusMode.includes('continuous'))setTimeout(()=>t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}),2500);
+    return true;
+  }catch(e){return false;}
+}
+function tapNorm(v,ev){
+  const r=v.getBoundingClientRect(),vw=v.videoWidth||r.width,vh=v.videoHeight||r.height;
+  const contain=v.classList.contains('fitContain');
+  const sc=contain?Math.min(r.width/vw,r.height/vh):Math.max(r.width/vw,r.height/vh);
+  const dw=vw*sc,dh=vh*sc,ox=(r.width-dw)/2,oy=(r.height-dh)/2;
+  const cl=n=>Math.min(1,Math.max(0,n));
+  return {x:cl((ev.clientX-r.left-ox)/dw),y:cl((ev.clientY-r.top-oy)/dh)};
+}
+$('#preview').addEventListener('click',async ev=>{
+  const n=tapNorm($('#preview'),ev);ring(ev.clientX,ev.clientY);
+  const ok=await focusAt(n.x,n.y);
+  if(!ok&&!S.focusHint){S.focusHint=1;toast('이 폰은 자동 초점(연속)으로 동작해요');}
+});
+$('#liveVideo').addEventListener('click',ev=>{
+  if(!connected())return;
+  const n=tapNorm($('#liveVideo'),ev);ring(ev.clientX,ev.clientY);
+  S.conn.send({type:'focus',x:n.x,y:n.y});
+});
 /* 마지막으로 들어간 칸 표시 */
 function markLast(id){try{localStorage.setItem('swinglab_last',id);}catch(e){}paintLast();}
 function paintLast(){let l='';try{l=localStorage.getItem('swinglab_last')||'';}catch(e){}['bView','bCam','bSolo','bImport'].forEach(i=>{const b=$('#'+i);if(b)b.classList.toggle('last',i===l);});}
