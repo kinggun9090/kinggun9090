@@ -315,13 +315,27 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 #fxPanel{z-index:40!important}
 #fxPanel.onlive{bottom:calc(env(safe-area-inset-bottom) + 290px)!important}
 #fxPanel.onrev{bottom:calc(env(safe-area-inset-bottom) + 150px)!important}
+
+/* ======== v32: 확인폰 라이브 화면 = 촬영폰 화면과 동일 배치 ======== */
+#live{touch-action:none}
+#live .top{grid-template-columns:1fr 1.5fr 1fr}
+#live .top>*{justify-content:center;text-align:center;min-width:0}
+#live #lvConnPill{grid-column:1 / -1}
+#live .toolcol{position:fixed;right:16px;top:calc(env(safe-area-inset-top) + 124px);display:flex;flex-direction:column;gap:10px;z-index:6}
+#live .stack{top:calc(env(safe-area-inset-top) + 112px)!important;bottom:calc(env(safe-area-inset-bottom) + 270px)!important}
+#live #lvZoom{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 184px)!important;display:flex;gap:6px;z-index:6;width:auto;justify-content:center}
+#live #lvZoom .chip{min-width:46px;height:30px!important;min-height:30px!important;font-size:12px!important}
+#lvModeBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 226px);display:flex;gap:2px;z-index:6;width:max-content}
+#lvModeBar button{border:1px solid transparent;background:transparent;color:#fff;font-size:12px;font-weight:600;height:28px;padding:0 9px;border-radius:var(--r);text-shadow:0 1px 3px #000;white-space:nowrap}
+#lvModeBar button.on{color:var(--acc);border-color:var(--acc);background:rgba(0,0,0,.55)}
+#live #lvRecInd{top:calc(env(safe-area-inset-top) + 92px)}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v31</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v32</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -422,13 +436,17 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
   <canvas id="lvFxCv"></canvas>
   <div class="top">
     <button class="chip sm" id="lvExit">✕ 종료</button>
-    <span class="pill ok">● LIVE</span>
     <span class="pill" id="lvInfo">촬영폰</span>
     <button class="chip sm" id="lvFit">▣ 꽉 채우기</button>
-    <button class="chip sm" id="lvFxBtn">✨ 보정</button>
+    <span class="pill ok" id="lvConnPill">● LIVE · 촬영폰 연결됨</span>
     <span class="pill rec" id="lvRecInd" style="display:none"><span style="color:var(--red)">●</span> REC <span id="lvTimer">0:00</span></span>
   </div>
   <div id="lvCount"></div>
+  <div class="toolcol">
+    <button class="tb" id="lvFxBtn" aria-label="보정">✨</button>
+  </div>
+  <div id="lvModeBar"><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button><button data-m="slomo">슬로모</button></div>
+  <div class="zoomrow" id="lvZoom"><button class="chip" data-z="0.5">.5</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2</button><button class="chip" data-z="3">3</button></div>
   <div class="stack">
     <div class="msg" id="lvMsg" style="display:block">📡 촬영폰 화면 불러오는 중…</div>
     <button class="btn pri" id="lvPhoto" style="display:none;text-align:center">📷 사진첩에 저장</button>
@@ -439,7 +457,6 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
       <select id="lvRes"><option value="720">720p</option><option value="1080" selected>1080p</option><option value="2160">4K</option></select>
       <select id="lvFps"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
-    <div class="row" id="lvZoom"><button class="chip" data-z="0.5">0.5x</button><button class="chip" data-z="1">1x</button><button class="chip" data-z="2">2x</button><button class="chip" data-z="3">3x</button></div>
     <div class="row" style="gap:28px">
       <button class="round" id="lvHist" aria-label="스윙 기록">🗂</button>
       <button class="recbtn" id="lvRec" aria-label="촬영"></button>
@@ -928,7 +945,7 @@ function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style
 function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
 function goLive(){
   show('live');applyFit();updateViewFx();
-  if(!document.querySelector('#lvZoom .chip.on')){const b=document.querySelector('#lvZoom .chip[data-z="1"]');if(b)b.classList.add('on');}
+  if(!document.querySelector('#lvZoom .chip.on'))paintZoom(S.rz||1,'#lvZoom');
   const lv=$('#liveVideo');const fix=()=>{forceFull();try{const st=lv.srcObject;if(st){lv.srcObject=null;lv.srcObject=st;}lv.play().catch(()=>{});}catch(e){}};
   forceFull();requestAnimationFrame(()=>{forceFull();});[80,300,900,2000].forEach(t=>setTimeout(forceFull,t));setTimeout(fix,120);
   if(!$('#liveVideo').srcObject)lvMsg('📡 촬영폰 화면 불러오는 중…');
@@ -954,8 +971,9 @@ function onData(d){
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
   else if(d.type==='focus'){if(S.role==='cam'){const v=$('#preview');const r=v.getBoundingClientRect();ring(r.left+d.x*r.width,r.top+d.y*r.height);focusAt(d.x,d.y);}}
-  else if(d.type==='zoom'){S.rz=d.label||d.z||1;const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';{const lc=$('#lvFxCv');lc.style.transformOrigin='center';lc.style.transform=lv.style.transform;}document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-(d.label||d.z))<0.05));}
+  else if(d.type==='zoom'){S.rz=d.label||d.z||1;paintZoom(S.rz,'#lvZoom');const lv=$('#liveVideo');lv.style.transformOrigin='center';lv.style.transform=d.z>1.001?'scale('+d.z+')':'';{const lc=$('#lvFxCv');lc.style.transformOrigin='center';lc.style.transform=lv.style.transform;}document.querySelectorAll('#lvZoom .chip').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.z-(d.label||d.z))<0.05));}
   else if(d.type==='zoomset'){if(S.role==='cam')setZoom(d.z);}
+  else if(d.type==='mode'){if(S.role==='cam'&&!S.recording)setMode(d.m);else if(S.role==='view')document.querySelectorAll('#lvModeBar button').forEach(b=>b.classList.toggle('on',b.dataset.m===d.m));}
   else if(d.type==='flip'){if(S.role==='cam'&&!S.recording){S.facing=S.facing==='environment'?'user':'environment';openCamera();}}
   else if(d.type==='cfg'){if(S.role==='cam'&&!S.recording){if(d.fps)$('#fpsSel').value=String(d.fps);if(d.res)$('#resSel').value=String(d.res);openCamera();}}
   else if(d.type==='info'){$('#lvInfo').textContent='촬영폰 · '+d.text;}
@@ -1532,9 +1550,9 @@ function initCamTools(){
   paintZoom(S.zoom);
   sendZoom();
 }
-function paintZoom(z){
+function paintZoom(z,sel){
   let best=null,bd=9;
-  document.querySelectorAll('#zoomRow .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z==='0.5'?'.5':b.dataset.z==='1'?'1x':b.dataset.z;if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
+  document.querySelectorAll((sel||'#zoomRow')+' .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z==='0.5'?'.5':b.dataset.z==='1'?'1x':b.dataset.z;if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
   if(best){best.classList.add('on');best.textContent=(bd<0.05)?(best.dataset.z==='0.5'?'.5x':best.dataset.z+'x'):z.toFixed(1)+'x';}
 }
 function sendZoom(){if(S.role==='cam'&&connected()){try{S.conn.send({type:'zoom',z:S.swScale||1,label:S.zoom});}catch(e){}}}
@@ -1581,7 +1599,17 @@ document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>{if(S.justD
   },{passive:false});
   lr.addEventListener('touchend',()=>{if(ld){S.justDragged=true;setTimeout(()=>{S.justDragged=false;},350);}ld=false;},{passive:true});
 })();
-document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});document.querySelectorAll('#lvZoom .chip').forEach(x=>x.classList.toggle('on',x===b));}});
+document.querySelectorAll('#lvZoom .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;if(connected()){S.conn.send({type:'zoomset',z:+b.dataset.z});S.rz=+b.dataset.z;paintZoom(S.rz,'#lvZoom');}});
+
+// 확인폰: 모드 원격 변경 + 화면 핀치 줌
+document.querySelectorAll('#lvModeBar button').forEach(b=>b.onclick=()=>{if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}S.conn.send({type:'mode',m:b.dataset.m});document.querySelectorAll('#lvModeBar button').forEach(x=>x.classList.toggle('on',x===b));});
+(function(){
+  const el=$('#live');let d0=0,z0=1,t0=0;
+  const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  el.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e);z0=S.rz||1;}},{passive:true});
+  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const z=Math.max(1,Math.min(6,z0*dist(e)/d0));if(performance.now()-t0>120&&connected()){t0=performance.now();S.conn.send({type:'zoomset',z});}}},{passive:false});
+  el.addEventListener('touchend',e=>{if(e.touches.length<2)d0=0;},{passive:true});
+})();
 // 핀치 줌
 (function(){
   const el=$('#cam');let d0=0,z0=1;
@@ -1648,6 +1676,7 @@ async function setMode(m,init){
   if(S.recording)return;
   const prev=S.mode;S.mode=m;try{localStorage.setItem('swinglab_mode',m);}catch(e){}
   document.querySelectorAll('#modeBar button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  if(S.role==='cam'&&connected()){try{S.conn.send({type:'mode',m});}catch(e){}}
   $('#bRec').classList.toggle('photo',m==='photo');
   $('#durSel').style.visibility=$('#fpsSel').style.visibility=(m==='photo')?'hidden':'visible';
   if(typeof updateFx==='function')updateFx();
