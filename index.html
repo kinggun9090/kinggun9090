@@ -148,12 +148,24 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 .tile .l{white-space:nowrap}
 .hudhead{gap:8px}
 @media(max-width:380px){.recgo{font-size:15px;padding:13px 8px}.tile .v{font-size:26px}}
+
+/* ---- 테두리 통일 + 하단 바 겹침 방지 ---- */
+:root{--r:12px}
+.chip,.btn,select,input[type=text],input[type=tel],.card,.hud,.pane,.sq,.recbar .chip,.recbar select,.phase,.pill{border:1px solid var(--line)!important;border-radius:var(--r)!important}
+.chip.on,.btn.pri{border-color:var(--acc)!important}
+.recgo{border-radius:var(--r)!important}
+.pill.ok,.pill.bad,.pill.rec{border-color:transparent!important}
+.round{border-radius:50%!important;border:none!important}
+.tile{border-radius:0}
+#review,#monitor,#home{padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
+.res,.ctl{scroll-margin-bottom:170px}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v17</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -706,22 +718,24 @@ async function viewerConnect(){
 /* ---------- 실시간 화면 (A → B) ---------- */
 function sendLive(){
   if(S.role!=='cam'||!S.stream||!connected())return;
-  if(S.conn.isNT){S.conn.attachStream(S.stream);return;}
+  if(S.conn.isNT){S.conn.attachStream(S.stream);[1000,4000,9000].forEach(t=>setTimeout(()=>tuneLive(S.conn&&S.conn.pc),t));return;}
   if(!S.peer||!S.remoteId)return;
   try{if(S.call)S.call.close();}catch(e){}
   try{S.call=S.peer.call(S.remoteId,S.stream);}catch(e){console.warn(e);}
-  setTimeout(()=>tuneLive(S.call),1500);setTimeout(()=>tuneLive(S.call),5000);
+  [1500,4000,9000].forEach(t=>setTimeout(()=>tuneLive(S.call),t));
 }
 function sendInfo(){if(S.role==='cam'&&connected())S.conn.send({type:'info',text:$('#pillFps').textContent});}
 function tuneLive(call){
   try{
-    const pc=call&&call.peerConnection;if(!pc)return;
-    pc.getSenders().forEach(async s=>{
-      if(!s.track||s.track.kind!=='video')return;
-      const p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];
-      p.encodings[0].maxBitrate=3e6;
-      const h=s.track.getSettings().height||0;if(h>720)p.encodings[0].scaleResolutionDownBy=h/720;
-      await s.setParameters(p);
+    const pc=call&&(call.peerConnection||(call.getSenders?call:null));if(!pc)return;
+    pc.getSenders().forEach(async sd=>{
+      if(!sd.track||sd.track.kind!=='video')return;
+      try{sd.track.contentHint='detail';}catch(e){}
+      const p=sd.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];
+      p.encodings[0].maxBitrate=10e6;p.encodings[0].maxFramerate=30;
+      p.encodings[0].scaleResolutionDownBy=1;
+      p.degradationPreference='maintain-resolution';
+      await sd.setParameters(p);
     });
   }catch(e){}
 }
