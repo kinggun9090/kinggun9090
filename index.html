@@ -303,7 +303,7 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v28</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v29</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1013,7 +1013,6 @@ function registerClip(c){
 }
 function addSwing(c){
   registerClip(c);S.stateText='';setStage('');monUI();liveState('idle');lvMsg('');
-  if((S.photoHint=(S.photoHint||0)+1)<=2)toast('📷 위쪽 "사진첩에 저장" 버튼을 누르면 사진첩에 저장돼요',4500);
   openReview(c,H.length>1?H[H.length-2]:null,{auto:true});
 }
 function trimStore(){while(H.length>60){const o=H.shift();DB.del(o.id);try{URL.revokeObjectURL(o.url);}catch(e){}}}
@@ -1024,8 +1023,8 @@ function deleteClip(c){
 function updatePhotoUI(){
   const n=S.photoQ.length,t=`📷 사진첩에 저장${n>1?' ('+n+')':''}`;
   const a=$('#photoBtn'),l=$('#lvPhoto'),b=$('#bSave');
-  if(a){a.style.display=(S.role==='cam'&&n>0)?'block':'none';a.textContent=t;}
-  if(l){l.style.display=(S.role==='view'&&n>0)?'block':'none';l.textContent=t;}
+  if(a){a.style.display='none';a.textContent=t;}
+  if(l){l.style.display='none';l.textContent=t;}
   if(b){b.textContent=n>0?'📷 사진첩 저장':'내보내기';b.classList.toggle('on',n>0);}
 }
 async function savePhotos(){
