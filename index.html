@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b120e">
+<title>SwingLab</title>
+<style>
+:root{--bg:#0b120e;--card:#141f19;--line:#233229;--txt:#e9f2ec;--dim:#8da398;--acc:#3ddc84;--warn:#ffb020;--red:#ff4d4d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;-webkit-text-size-adjust:100%;touch-action:manipulation;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overscroll-behavior:none}
+.screen{display:none;position:fixed;inset:0;overflow-x:hidden;overflow-y:auto;max-width:100vw;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.screen.active{display:flex;flex-direction:column}
+h1{font-size:28px;margin:28px 20px 4px}
+.sub{color:var(--dim);margin:0 20px 18px;font-size:14px;line-height:1.5}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:14px 16px;font-size:16px;font-weight:600;text-align:left;width:100%}
+.btn small{display:block;color:var(--dim);font-weight:400;margin-top:3px;font-size:12.5px}
+.btn.pri{background:var(--acc);color:#05200f;border-color:var(--acc)}
+.btn.pri small{color:#0d4a26}
+.btn:active{transform:scale(.98)}
+.col{display:flex;flex-direction:column;gap:10px;padding:0 20px}
+.row{display:flex;gap:8px;align-items:center}
+.chip{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:999px;padding:9px 13px;font-size:14px;font-weight:600;white-space:nowrap}
+.chip.on{background:var(--acc);color:#05200f;border-color:var(--acc)}
+.chip.sm{padding:6px 10px;font-size:12.5px}
+input[type=text],input[type=tel],select{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px;font-size:16px}
+.tips{margin:18px 20px;padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--dim);font-size:13px;line-height:1.6}
+.tips b{color:var(--txt)}
+/* camera */
+#cam{background:#000}
+#preview{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.top{position:absolute;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+.pill{display:inline-block;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:600}
+.pill.ok{color:var(--acc)}.pill.bad{color:var(--warn)}
+#count{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:140px;font-weight:800;color:#fff;text-shadow:0 4px 30px #000;z-index:2;pointer-events:none}
+.bottom{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 14px);display:flex;flex-direction:column;gap:12px;align-items:center;z-index:3}
+.bottom .row{justify-content:center}
+.recbtn{width:76px;height:76px;border-radius:50%;border:5px solid #fff;background:var(--red);box-shadow:0 0 0 4px rgba(0,0,0,.35)}
+.recbtn.stop{border-radius:18px;width:64px;height:64px}
+.round{width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:20px}
+.msg{position:absolute;left:24px;right:24px;top:22%;background:rgba(0,0,0,.8);padding:16px;border-radius:14px;text-align:center;z-index:4;display:none;line-height:1.55;white-space:pre-line;font-size:15px;word-break:keep-all}
+/* monitor */
+.bigcode{font-size:56px;font-weight:800;letter-spacing:8px;color:var(--acc);text-align:center;margin:4px 0}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hitem{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left}
+/* review */
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.bar h2{margin:0;font-size:17px;flex:1}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 4px}
+.panes.single{grid-template-columns:1fr}
+.pane{position:relative;background:#000;aspect-ratio:3/4;border-radius:10px;overflow:hidden}
+.pane video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.pane canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pane .lab{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:8px;font-size:12px;font-weight:700;z-index:2}
+.pane .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--dim);font-size:13px;text-align:center;padding:10px}
+.ctl{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.ctl input[type=range]{width:100%;accent-color:var(--acc)}
+.tl{display:flex;justify-content:space-between;color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums}
+.scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;align-items:center}
+.play{width:56px;height:56px;border-radius:50%;border:none;background:var(--acc);color:#05200f;font-size:22px;font-weight:800;flex:none}
+.sq{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:16px;flex:none}
+.res{margin:6px 14px 20px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.kv{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border:none}.kv span:first-child{color:var(--dim)}
+.note{font-size:12.5px;color:var(--warn);margin-top:8px;line-height:1.5}
+.good{color:var(--acc)}
+.prog{height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--acc)}
+.status{font-size:13px;color:var(--dim);text-align:center}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:99;display:none;max-width:88%;text-align:center}
+label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<!-- 홈 -->
+<section id="home" class="screen active">
+  <h1>⛳ SwingLab</h1>
+  <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
+  <div class="tips" id="envWarn" style="display:none;border-color:var(--warn);color:var(--txt);margin-top:0">⚠️ <b>이 화면에서는 카메라와 폰 간 연결이 막혀 있어요.</b><br>앱 안의 미리보기가 아니라, <b>Safari/Chrome 주소창에서 이 페이지 주소를 직접 열어야</b> 동작해요. (HTTPS 주소로 호스팅 필요)</div>
+  <div class="col">
+    <button class="btn pri" id="bView">📺 B폰 · 확인 화면 시작<small>방 코드가 만들어지고, A폰에서 찍은 스윙이 자동으로 뜹니다</small></button>
+    <button class="btn" id="bCam">📷 A폰 · 촬영폰으로 연결<small>B폰에 뜬 4자리 코드를 입력</small></button>
+    <div class="row" id="joinRow" style="display:none">
+      <input type="tel" id="codeIn" inputmode="numeric" maxlength="4" placeholder="코드 4자리" style="flex:1">
+      <button class="chip on" id="bJoinGo" style="padding:13px 20px">연결</button>
+    </div>
+    <button class="btn" id="bSolo">🎥 폰 1대로 촬영 + 확인<small>찍고 바로 이 폰에서 분석</small></button>
+    <button class="btn" id="bImport">📂 저장된 영상 불러와 분석·비교<small>프로 스윙 vs 내 스윙 비교에도 사용</small></button>
+  </div>
+  <div class="tips">
+    <b>사용 순서</b><br>
+    1. B폰(확인용)에서 "확인 화면 시작" → 코드 확인<br>
+    2. A폰(촬영용)에서 코드 입력 → 삼각대에 세우기<br>
+    3. A폰 촬영 버튼, 또는 B폰의 "원격 촬영"으로 시작<br>
+    4. 스윙이 끝나면 B폰에 슬로우 모션 + 자세 분석이 자동으로 표시돼요<br><br>
+    <b>촬영 팁</b> 정면 또는 공 뒤쪽, 허리 높이, 3m 거리, 전신이 보이게. 같은 Wi-Fi가 가장 안정적이에요.<br>
+    공 속도·스핀 같은 레이더 수치는 측정할 수 없고, 분석 값은 카메라 기반 <b>추정값</b>이에요.
+  </div>
+</section>
+
+<!-- 확인폰 대기 화면 -->
+<section id="monitor" class="screen">
+  <div class="bar"><button class="chip sm" id="monBack">← 종료</button><h2>📺 확인 화면</h2></div>
+  <div class="col">
+    <div class="card" style="text-align:center">
+      <div style="color:var(--dim);font-size:13px">촬영폰(A)에서 입력할 코드</div>
+      <div class="bigcode" id="bigCode">----</div>
+      <span class="pill bad" id="monStatus">촬영폰 대기 중…</span>
+      <div style="margin-top:12px"><button class="chip" id="monRetry" style="display:none">🔄 다시 접속</button></div>
+    </div>
+    <div class="row">
+      <select id="monDur"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <button class="btn pri" id="bRemote" style="text-align:center">🎬 원격 촬영 시작</button>
+    </div>
+    <button class="btn" id="bMonImport">📂 저장된 영상 불러오기</button>
+    <h3 style="margin:8px 0 0;font-size:15px">스윙 기록</h3>
+    <div class="hist" id="hist"><div class="status">아직 촬영된 스윙이 없어요</div></div>
+  </div>
+  <div style="height:30px"></div>
+</section>
+
+<!-- 카메라 -->
+<section id="cam" class="screen">
+  <video id="preview" playsinline muted autoplay></video>
+  <div class="top">
+    <span class="pill" id="pillRole"></span>
+    <span class="pill" id="pillConn"></span>
+    <span class="pill" id="pillFps"></span>
+  </div>
+  <div id="count"></div>
+  <div class="msg" id="camMsg"></div>
+  <button class="btn pri" id="camRetry" style="position:absolute;left:24px;right:24px;width:auto;top:62%;z-index:5;display:none;text-align:center;font-size:17px;padding:16px">📷 카메라 켜기 (허용 누르기)</button>
+  <div class="bottom">
+    <div class="row">
+      <select id="durSel"><option value="5">5초</option><option value="8" selected>8초</option><option value="12">12초</option></select>
+      <select id="fpsSel"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
+    </div>
+    <div class="row" style="gap:28px">
+      <button class="round" id="bBack">✕</button>
+      <button class="recbtn" id="bRec" aria-label="촬영"></button>
+      <button class="round" id="bFlip">🔄</button>
+    </div>
+  </div>
+</section>
+
+<!-- 리뷰 -->
+<section id="review" class="screen">
+  <div class="bar">
+    <button class="chip sm" id="rBack">← 대기</button>
+    <h2 id="rTitle">스윙 분석</h2>
+    <button class="chip sm" id="bSave">저장</button>
+  </div>
+  <div class="panes" id="panes">
+    <div class="pane" id="pA">
+      <span class="lab" id="labA">이번 스윙</span><video id="vA" playsinline muted></video><canvas id="cA"></canvas>
+      <div class="empty" id="eA">영상 없음<button class="chip sm" data-pick="A">영상 선택</button></div>
+    </div>
+    <div class="pane" id="pB">
+      <span class="lab" id="labB">이전 스윙</span><video id="vB" playsinline muted></video><canvas id="cB"></canvas>
+      <div class="empty" id="eB">비교할 영상 없음<button class="chip sm" data-pick="B">영상 선택</button></div>
+    </div>
+  </div>
+  <div class="ctl">
+    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <div class="tl"><span id="tNow">0.00s</span><span id="tInfo"></span><span id="tEnd">0.00s</span></div>
+    <div class="row" style="justify-content:center;gap:12px">
+      <button class="sq" id="bPrev">◀︎</button>
+      <button class="play" id="bPlay">▶</button>
+      <button class="sq" id="bNext">▶︎</button>
+    </div>
+    <div class="scroll" id="speeds">
+      <button class="chip sm" data-sp="0.1">0.1x</button>
+      <button class="chip sm" data-sp="0.25">0.25x</button>
+      <button class="chip sm on" data-sp="0.5">0.5x</button>
+      <button class="chip sm" data-sp="1">1x</button>
+      <select id="stepFps" style="padding:6px 8px;font-size:13px"><option value="30">프레임 30</option><option value="60">프레임 60</option><option value="120">프레임 120</option><option value="240">프레임 240</option></select>
+    </div>
+    <div class="scroll">
+      <button class="chip sm on" id="tLoop">반복 재생</button>
+      <button class="chip sm on" id="tSkel">뼈대 표시</button>
+      <button class="chip sm" id="bAlignImp">임팩트 기준 정렬</button>
+      <button class="chip sm" id="bAlignOff">정렬 해제</button>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="lefty"> 왼손잡이</label>
+      <button class="btn pri" id="bAnalyze" style="text-align:center;padding:12px">🧠 자세 분석 다시 실행</button>
+    </div>
+    <div class="prog" id="prog" style="display:none"><i></i></div>
+  </div>
+  <div class="res" id="res"></div>
+  <input type="file" id="filePick" accept="video/*" style="display:none">
+</section>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// role: 'cam'(A 촬영폰) | 'view'(B 확인폰) | 'solo'
+const S={role:'solo',peer:null,conn:null,stream:null,facing:'environment',rec:null,chunks:[],recStart:0,recording:false,fps:30,wake:null,code:''};
+const H=[]; // 스윙 기록 (확인폰/단독)
+window.addEventListener('unhandledrejection',e=>toast('오류: '+((e.reason&&e.reason.message)||e.reason),5000));
+window.addEventListener('error',e=>toast('오류: '+e.message,5000));
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));}
+function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',ms);}
+function beep(f=880,d=.12){try{const ac=beep.ac||(beep.ac=new(window.AudioContext||window.webkitAudioContext)());if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.25;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
+function pickMime(){const c=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];return c.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';}
+function showMsg(t,ms){const m=$('#camMsg');m.textContent=t;m.style.display='block';if(ms){clearTimeout(showMsg.h);showMsg.h=setTimeout(()=>m.style.display='none',ms);}}
+function hideMsg(){$('#camMsg').style.display='none';}
+const connected=()=>!!(S.conn&&S.conn.open);
+
+/* ---------- 카메라 (A폰 / 단독) ---------- */
+function waitVideo(v,ms=3500){return new Promise(res=>{const t0=performance.now();(function chk(){if(v.videoWidth>0&&v.readyState>=2)return res(true);if(performance.now()-t0>ms)return res(false);setTimeout(chk,100);})();});}
+async function openCamera(){
+  closeCamera();
+  $('#camRetry').style.display='none';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showMsg('카메라를 쓸 수 없는 주소예요.\nhttps:// 로 시작하는 주소를 사파리에서 열어주세요.');$('#camRetry').style.display='block';return false;
+  }
+  $('#pillFps').textContent='카메라 켜는 중…';
+  const fps=+$('#fpsSel').value;
+  let err=null;
+  // 1) 가장 단순한 요청부터 (아이폰 사파리에서 가장 안정적)
+  for(const c of[{video:{facingMode:{ideal:S.facing}},audio:false},{video:true,audio:false}]){
+    try{S.stream=await navigator.mediaDevices.getUserMedia(c);break;}catch(e){err=e;if(e.name==='NotAllowedError')break;}
+  }
+  if(!S.stream){$('#pillFps').textContent='카메라 꺼짐';camFail(err);return false;}
+  const track=S.stream.getVideoTracks()[0];
+  // 2) 켜진 뒤에 해상도/fps 상향 시도 (실패해도 무시)
+  try{await track.applyConstraints({width:{ideal:1280},height:{ideal:720},frameRate:{ideal:fps}});}catch(e){}
+  const v=$('#preview');v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');v.srcObject=S.stream;
+  try{await v.play();}catch(e){}
+  const ok=await waitVideo(v);
+  if(!ok){closeCamera();$('#pillFps').textContent='영상 없음';camFail({name:'NoVideo'});return false;}
+  hideMsg();
+  const st=track.getSettings();
+  S.fps=Math.round(st.frameRate||30);
+  $('#pillFps').textContent=`${st.width||v.videoWidth}×${st.height||v.videoHeight} · ${S.fps}fps`;
+  try{if(navigator.wakeLock)S.wake=await navigator.wakeLock.request('screen');}catch(e){}
+  return true;
+}
+function camFail(err){
+  const n=err&&err.name;
+  let t='카메라를 열 수 없어요';
+  if(n==='NotAllowedError')t+='\n\n아래 버튼을 누르고 "허용"을 선택하세요.\n이미 거부했다면 주소창 왼쪽 "aA" → 웹사이트 설정 → 카메라 → 허용';
+  else if(n==='NotFoundError')t+='\n카메라를 찾을 수 없어요.';
+  else if(n==='NotReadableError')t+='\n다른 앱이 카메라를 쓰는 중이에요. 다른 앱을 닫아주세요.';
+  else if(n==='NoVideo')t+='\n영상이 들어오지 않아요. 아래 버튼을 다시 눌러보세요.\n계속되면 사파리를 완전히 닫았다 다시 열어주세요.';
+  else t+=' ('+n+')';
+  showMsg(t);$('#camRetry').style.display='block';
+}
+function closeCamera(){
+  if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null;}
+  try{if(S.wake){S.wake.release();S.wake=null;}}catch(e){}
+}
+function camUI(){
+  $('#pillRole').textContent=S.role==='cam'?'📷 촬영폰 (A)':'단독 모드';
+  const c=$('#pillConn');
+  if(S.role!=='cam'){c.style.display='none';return;}
+  c.style.display='';c.className='pill '+(connected()?'ok':'bad');
+  c.textContent=connected()?'확인폰 연결됨':(S.net||'연결 중…');
+}
+function monUI(){
+  $('#bigCode').textContent=(S.code&&S.peerReady)?S.code:'접속 중…';
+  $('#bigCode').style.fontSize=(S.code&&S.peerReady)?'':'28px';
+  $('#monRetry').style.display=S.peerReady?'none':'inline-block';
+  const m=$('#monStatus');
+  m.className='pill '+(connected()?'ok':'bad');
+  m.textContent=connected()?'✅ 촬영폰 연결됨':(S.peerReady?'촬영폰 대기 중…':(S.net||'서버 접속 중…'));
+}
+async function enterCam(role){
+  S.role=role;show('cam');camUI();
+  const ok=await openCamera();
+  if(ok&&role==='cam')showMsg('촬영 버튼을 누르거나\n확인폰에서 원격 촬영을 시작하세요',3500);
+}
+function leaveAll(){
+  closeCamera();
+  try{if(S.conn)S.conn.close();}catch(e){}
+  try{if(S.peer)S.peer.destroy();}catch(e){}
+  S.conn=null;S.peer=null;S.role='solo';hideMsg();show('home');
+}
+
+/* ---------- P2P ---------- */
+const ICE={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'},
+  {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}
+]};
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail'));document.head.appendChild(s);});}
+async function ensurePeer(){
+  if(window.Peer)return true;
+  for(const u of['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js','https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js']){
+    try{await loadScript(u);if(window.Peer)return true;}catch(e){}
+  }
+  return false;
+}
+function setNet(t){S.net=t;camUI();monUI();}
+function setupConn(c){
+  S.conn=c;
+  c.on('open',()=>{S.net='';camUI();monUI();toast(S.role==='view'?'촬영폰 연결됨':'확인폰에 연결됨');});
+  c.on('data',onData);
+  c.on('close',()=>{camUI();monUI();toast('연결이 끊겼어요');});
+  c.on('error',e=>toast('연결 오류: '+e));
+}
+async function startViewer(tries=0){
+  S.peerReady=false;S.code='';setNet('서버 접속 중…');
+  if(!await ensurePeer()){setNet('연결 라이브러리를 불러오지 못했어요 · 인터넷 확인');return;}
+  const code=String(Math.floor(1000+Math.random()*9000));
+  const p=new Peer('swinglab-'+code,{config:ICE});S.peer=p;
+  p.on('open',()=>{S.code=code;S.peerReady=true;S.net='';monUI();});
+  p.on('connection',c=>setupConn(c));
+  p.on('disconnected',()=>{S.peerReady=false;setNet('서버 연결 끊김 · 재접속 중…');try{p.reconnect();}catch(e){}});
+  p.on('error',e=>{
+    if(e.type==='unavailable-id'&&tries<5){try{p.destroy();}catch(_){}startViewer(tries+1);return;}
+    S.peerReady=false;setNet(e.type==='browser-incompatible'?'이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요':'서버 오류: '+e.type+' · 홈에서 다시 시도');
+  });
+  setTimeout(()=>{if(!S.peerReady&&S.role==='view'&&!S.net.includes('오류'))setNet('서버 접속이 오래 걸려요 · 인터넷/차단 확인');},10000);
+}
+async function startCamPeer(code,attempt=0){
+  setNet('서버 접속 중…');
+  if(!await ensurePeer()){setNet('연결 라이브러리를 불러오지 못했어요 · 인터넷 확인');return;}
+  if(S.peer){try{S.peer.destroy();}catch(e){}S.peer=null;}
+  const p=new Peer(undefined,{config:ICE});S.peer=p;
+  let done=false;
+  const fail=msg=>{
+    if(done||S.peer!==p)return;done=true;
+    if(attempt<2){setNet(msg+' · 재시도 '+(attempt+1)+'/2');setTimeout(()=>startCamPeer(code,attempt+1),1500);}
+    else setNet(msg+' · ✕ 눌러 홈에서 다시 시도');
+  };
+  p.on('open',()=>{
+    setNet('확인폰 찾는 중…');
+    const c=p.connect('swinglab-'+code,{reliable:true});
+    setupConn(c);
+    c.on('open',()=>{done=true;});
+    setTimeout(()=>{if(!connected())fail('확인폰에 연결하지 못했어요');},12000);
+  });
+  p.on('error',e=>{if(e.type==='browser-incompatible'){done=true;setNet('이 화면은 연결을 지원하지 않아요 · Safari에서 직접 열어주세요');return;}fail(e.type==='peer-unavailable'?'코드를 찾을 수 없어요 · 확인폰 코드 확인':'서버 오류: '+e.type);});
+}
+function onData(d){
+  if(!d||!d.type)return;
+  if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
+  else if(d.type==='sending'){const m=$('#monStatus');m.className='pill bad';m.textContent='📥 영상 수신 중…';toast('스윙 영상 수신 중…');}
+  else if(d.type==='clip'){
+    monUI();
+    const blob=new Blob([d.buf],{type:d.mime||'video/mp4'});
+    addSwing({blob,url:URL.createObjectURL(blob),mime:d.mime,dur:d.dur,fps:d.fps});
+  }
+}
+
+/* ---------- 녹화 (A폰 / 단독) ---------- */
+function onRecBtn(){
+  if(S.recording){stopRec();return;}
+  beep(1,.01);
+  startRec(+$('#durSel').value*1000);
+}
+function startRec(dur){
+  if(!S.stream||S.recording)return;
+  hideMsg();S.recording=true;
+  const startAt=performance.now()+3000;
+  const cnt=$('#count');cnt.style.display='flex';
+  let last=-1;
+  (function loop(){
+    const rem=startAt-performance.now();
+    if(rem>0&&S.recording){const n=Math.ceil(rem/1000);if(n!==last){last=n;cnt.textContent=n;beep(660,.08);}requestAnimationFrame(loop);}
+    else cnt.style.display='none';
+  })();
+  setTimeout(()=>{if(!S.recording)return;doStart(dur);},3000);
+}
+function doStart(dur){
+  S.chunks=[];
+  const mime=pickMime();
+  let r;
+  try{r=new MediaRecorder(S.stream,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{videoBitsPerSecond:8e6});}
+  catch(e){try{r=new MediaRecorder(S.stream);}catch(e2){toast('이 브라우저는 녹화를 지원하지 않아요');S.recording=false;return;}}
+  S.rec=r;
+  r.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};
+  r.onstart=()=>{S.recStart=performance.now();};
+  r.onstop=()=>finishRec(r.mimeType||mime||'video/mp4');
+  r.start(200);
+  beep(1200,.15);
+  $('#bRec').className='recbtn stop';
+  S.autoStop=setTimeout(stopRec,dur);
+}
+function stopRec(){
+  clearTimeout(S.autoStop);
+  if(S.rec&&S.rec.state!=='inactive'){S.stopAt=performance.now();S.rec.stop();}
+  else{S.recording=false;$('#count').style.display='none';$('#bRec').className='recbtn';}
+}
+async function finishRec(mime){
+  S.recording=false;$('#bRec').className='recbtn';
+  const blob=new Blob(S.chunks,{type:mime});
+  const dur=(S.stopAt-S.recStart)/1000;
+  if(S.role==='cam'){
+    if(!connected()){showMsg('확인폰과 연결이 끊겨서 전송하지 못했어요',3500);return;}
+    showMsg('📤 확인폰으로 전송 중…');
+    try{
+      S.conn.send({type:'sending'});
+      const buf=await blob.arrayBuffer();
+      S.conn.send({type:'clip',mime,dur,fps:S.fps,buf});
+      showMsg('전송 완료 ✅\n다음 스윙을 준비하세요',2500);
+    }catch(e){showMsg('전송 실패: '+e,4000);}
+    return;
+  }
+  // 단독 모드
+  addSwing({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.fps});
+}
+
+/* ---------- 스윙 기록 ---------- */
+function addSwing(c){
+  c.n=H.length+1;c.time=new Date();c.frames=null;c.m=null;
+  H.push(c);renderHist();
+  openReview(c,H.length>1?H[H.length-2]:null,{auto:true});
+}
+function renderHist(){
+  const el=$('#hist');
+  if(!H.length){el.innerHTML='<div class="status">아직 촬영된 스윙이 없어요</div>';return;}
+  el.innerHTML='';
+  [...H].reverse().forEach(c=>{
+    const b=document.createElement('button');b.className='btn hitem';
+    const t=c.time.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const info=c.m?`템포 ${c.m.ratio.toFixed(1)}:1`:(c.frames?'분석됨':'');
+    b.innerHTML=`<span>#${c.n} · ${t}</span><span style="color:var(--dim);font-size:13px">${info}</span>`;
+    b.onclick=()=>{const i=H.indexOf(c);openReview(c,i>0?H[i-1]:null,{auto:!c.frames});};
+    el.appendChild(b);
+  });
+}
+
+/* ---------- 리뷰 ---------- */
+const SL={A:{key:'A',video:$('#vA'),cv:$('#cA'),empty:$('#eA'),clip:null,dur:0,frames:null,m:null},
+          B:{key:'B',video:$('#vB'),cv:$('#cB'),empty:$('#eB'),clip:null,dur:0,frames:null,m:null}};
+const LABEL={A:'이번 스윙',B:'이전 스윙'};
+let T=0,playing=false,speed=.5,align=0,lastTs=0,skel=true,loop=true,pickTarget=null,lm=null,analyzing=false;
+const stepFps=()=>+$('#stepFps').value;
+const Tmax=()=>Math.max(SL.A.clip?SL.A.dur:0,SL.B.clip?SL.B.dur+align:0,0.01);
+const slotT=s=>s.key==='A'?T:T-align;
+
+async function fixDur(v){
+  if(v.duration===Infinity||isNaN(v.duration)){
+    await new Promise(res=>{v.addEventListener('timeupdate',function f(){v.removeEventListener('timeupdate',f);res();});v.currentTime=1e7;setTimeout(res,1500);});
+    v.currentTime=0;
+  }
+}
+async function loadSlot(key,clip){
+  const s=SL[key];s.clip=clip;s.frames=clip.frames||null;s.m=clip.m||null;
+  s.video.src=clip.url;
+  await new Promise(res=>{s.video.onloadedmetadata=res;s.video.onerror=res;s.video.load();});
+  await fixDur(s.video);
+  s.dur=isFinite(s.video.duration)?s.video.duration:(clip.dur||0);
+  s.empty.style.display='none';
+  if(clip.fps&&key==='A')$('#stepFps').value=[30,60,120,240].reduce((a,b)=>Math.abs(b-clip.fps)<Math.abs(a-clip.fps)?b:a);
+}
+function layoutPanes(){$('#panes').classList.toggle('single',false);}
+async function openReview(a,b,opts={}){
+  show('review');closeCamera();
+  playing=false;$('#bPlay').textContent='▶';T=0;align=0;$('#res').innerHTML='';
+  $('#rTitle').textContent=a&&a.n?`스윙 #${a.n}`:'스윙 분석';
+  for(const k of['A','B']){const s=SL[k];s.clip=null;s.dur=0;s.frames=null;s.m=null;s.video.pause();s.video.removeAttribute('src');s.video.load();s.empty.style.display='flex';}
+  if(a)await loadSlot('A',a);
+  if(b)await loadSlot('B',b);
+  autoAlign();seekAll();updateUI();renderResults();
+  if(opts.auto){
+    speed=.5;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===.5));
+    runAnalysis(false,true);
+  }
+}
+function autoAlign(){
+  if(SL.A.m&&SL.B.m)align=SL.A.m.tImp-SL.B.m.tImp;else align=0;
+}
+function seekAll(){
+  for(const k of['A','B']){const s=SL[k];if(!s.clip)continue;const t=slotT(s);s.video.pause();s.video.currentTime=Math.min(Math.max(t,0),s.dur);}
+}
+function setPlaying(p){
+  playing=p;$('#bPlay').textContent=p?'❚❚':'▶';
+  for(const k of['A','B']){SL[k].video.playbackRate=speed;}
+  if(!p)seekAll();
+  else{if(T>=Tmax()-0.02)T=0;lastTs=performance.now();}
+}
+function updateUI(){
+  const mx=Tmax();
+  $('#scrub').value=Math.round(T/mx*1000);
+  $('#tNow').textContent=T.toFixed(2)+'s';
+  $('#tEnd').textContent=mx.toFixed(2)+'s';
+  $('#tInfo').textContent=SL.B.clip&&SL.A.clip?`이전 스윙 오프셋 ${(align*1000).toFixed(0)}ms`:'';
+}
+function sizeCv(s){
+  const cv=s.cv,dpr=window.devicePixelRatio||1,w=Math.round(cv.clientWidth*dpr),h=Math.round(cv.clientHeight*dpr);
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+}
+const CONN=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+function drawOverlay(s){
+  sizeCv(s);const cv=s.cv,ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  if(!skel||!s.frames||!s.frames.length||!s.clip)return;
+  const t=s.video.currentTime;
+  let lo=0,hi=s.frames.length-1;
+  while(lo<hi){const mid=(lo+hi)>>1;if(s.frames[mid].t<t)lo=mid+1;else hi=mid;}
+  let f=s.frames[lo];if(lo>0&&Math.abs(s.frames[lo-1].t-t)<Math.abs(f.t-t))f=s.frames[lo-1];
+  if(Math.abs(f.t-t)>0.12)return;
+  const v=s.video,vw=v.videoWidth||1,vh=v.videoHeight||1,sc=Math.min(cv.width/vw,cv.height/vh),dw=vw*sc,dh=vh*sc,ox=(cv.width-dw)/2,oy=(cv.height-dh)/2;
+  const P=i=>[ox+f.p[i].x*dw,oy+f.p[i].y*dh];
+  ctx.lineWidth=Math.max(2,cv.width/180);ctx.lineCap='round';
+  const lead=$('#lefty').checked?[12,14,16]:[11,13,15];
+  for(const [a,b] of CONN){
+    const isLead=lead.includes(a)&&lead.includes(b);
+    ctx.strokeStyle=isLead?'#ffb020':'#3ddc84';
+    const [x1,y1]=P(a),[x2,y2]=P(b);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  }
+  ctx.fillStyle='#fff';
+  for(const i of[0,11,12,13,14,15,16,23,24]){const [x,y]=P(i);ctx.beginPath();ctx.arc(x,y,ctx.lineWidth*1.1,0,7);ctx.fill();}
+}
+function tick(ts){
+  if(playing){
+    const dt=(ts-lastTs)/1000;lastTs=ts;T+=dt*speed;
+    if(T>=Tmax()){
+      if(loop){T=0;seekAll();}
+      else{T=Tmax();setPlaying(false);}
+    }else for(const k of['A','B']){
+      const s=SL[k];if(!s.clip)continue;const t=slotT(s);
+      if(t>=0&&t<=s.dur){
+        if(s.video.paused){s.video.currentTime=t;s.video.play().catch(()=>{});}
+        else if(Math.abs(s.video.currentTime-t)>0.12)s.video.currentTime=t;
+      }else if(!s.video.paused)s.video.pause();
+    }
+    updateUI();
+  }
+  drawOverlay(SL.A);drawOverlay(SL.B);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* 컨트롤 */
+$('#bPlay').onclick=()=>setPlaying(!playing);
+$('#scrub').oninput=e=>{if(playing)setPlaying(false);T=e.target.value/1000*Tmax();seekAll();updateUI();};
+function step(n){if(playing)setPlaying(false);T=Math.min(Math.max(T+n/stepFps(),0),Tmax());seekAll();updateUI();}
+$('#bPrev').onclick=()=>step(-1);$('#bNext').onclick=()=>step(1);
+$('#speeds').addEventListener('click',e=>{
+  const b=e.target.closest('[data-sp]');if(!b)return;
+  speed=+b.dataset.sp;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',x===b));
+  for(const k of['A','B'])SL[k].video.playbackRate=speed;
+});
+$('#tSkel').onclick=e=>{skel=!skel;e.target.classList.toggle('on',skel);};
+$('#tLoop').onclick=e=>{loop=!loop;e.target.classList.toggle('on',loop);};
+$('#bAlignOff').onclick=()=>{align=0;seekAll();updateUI();toast('정렬을 해제했어요');};
+$('#bAlignImp').onclick=()=>{
+  const a=SL.A.m,b=SL.B.m;
+  if(!a||!b){toast('두 영상 모두 자세 분석이 필요해요');return;}
+  align=a.tImp-b.tImp;seekAll();updateUI();toast('두 영상의 임팩트를 맞췄어요');
+};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-pick]');if(!b)return;
+  pickTarget=b.dataset.pick;$('#filePick').value='';$('#filePick').click();
+});
+$('#filePick').onchange=async e=>{
+  const f=e.target.files[0];if(!f||!pickTarget)return;
+  const clip={blob:f,url:URL.createObjectURL(f),mime:f.type,dur:0,fps:0,frames:null,m:null};
+  await loadSlot(pickTarget,clip);
+  align=0;seekAll();updateUI();
+};
+$('#bSave').onclick=()=>{
+  for(const k of['A','B']){const c=SL[k].clip;if(!c)continue;
+    const a=document.createElement('a');a.href=c.url;a.download=`swing_${k}_${Date.now()}.${(c.mime||'').includes('mp4')?'mp4':'webm'}`;a.click();}
+};
+$('#rBack').onclick=()=>{
+  setPlaying(false);
+  if(S.role==='view'){show('monitor');monUI();renderHist();}
+  else{show('home');}
+};
+
+/* ---------- 자세 분석 ---------- */
+async function getLM(){
+  if(lm)return lm;
+  const base='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const vision=await import(base+'/vision_bundle.mjs');
+  const fs=await vision.FilesetResolver.forVisionTasks(base+'/wasm');
+  const model='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
+  for(const delegate of['GPU','CPU']){
+    try{lm=await vision.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:model,delegate},runningMode:'IMAGE',numPoses:1});break;}catch(e){console.warn(delegate,e);}
+  }
+  if(!lm)throw new Error('모델 로드 실패');
+  return lm;
+}
+function seekTo(v,t){return new Promise(res=>{let done=false;const f=()=>{if(done)return;done=true;v.removeEventListener('seeked',f);res();};v.addEventListener('seeked',f);v.currentTime=t;setTimeout(f,700);});}
+async function analyzeSlot(s,prog){
+  const lmk=await getLM();const v=s.video;v.pause();
+  const step=1/30,frames=[];
+  for(let t=0;t<s.dur;t+=step){
+    await seekTo(v,t);
+    const r=lmk.detect(v);
+    if(r.landmarks&&r.landmarks[0]&&r.worldLandmarks&&r.worldLandmarks[0])frames.push({t:v.currentTime,p:r.landmarks[0],w:r.worldLandmarks[0]});
+    prog(t/s.dur);
+  }
+  s.frames=frames;
+  return compute(frames,$('#lefty').checked);
+}
+function compute(fr,lefty){
+  const n=fr.length;if(n<15)return null;
+  const L=lefty?{s:12,e:14,w:16}:{s:11,e:13,w:15};
+  const wr=fr.map(f=>({x:(f.p[15].x+f.p[16].x)/2,y:(f.p[15].y+f.p[16].y)/2}));
+  const sp=[0];for(let i=1;i<n;i++){const dt=(fr[i].t-fr[i-1].t)||1/30;sp.push(Math.hypot(wr[i].x-wr[i-1].x,wr[i].y-wr[i-1].y)/dt);}
+  const sm=sp.map((_,i)=>{let a=0,c=0;for(let k=-1;k<=1;k++){if(sp[i+k]!==undefined){a+=sp[i+k];c++;}}return a/c;});
+  let imp=0;sm.forEach((v,i)=>{if(v>sm[imp])imp=i;});
+  let top=0;for(let i=0;i<=imp;i++)if(wr[i].y<wr[top].y)top=i;
+  if(top>=imp-1||imp<3)return null;
+  let st=0;for(let i=0;i<top;i++){if(Math.hypot(wr[i].x-wr[0].x,wr[i].y-wr[0].y)>0.03){st=i;break;}}
+  const ad=Math.max(0,st-1);
+  const yaw=(f,a,b)=>Math.atan2(f.w[b].z-f.w[a].z,f.w[b].x-f.w[a].x)*180/Math.PI;
+  const wrap=d=>{while(d>180)d-=360;while(d<-180)d+=360;return d;};
+  const sy0=yaw(fr[ad],11,12),hy0=yaw(fr[ad],23,24);
+  let sT=0,hT=0;
+  for(let i=st;i<=top;i++){sT=Math.max(sT,Math.abs(wrap(yaw(fr[i],11,12)-sy0)));hT=Math.max(hT,Math.abs(wrap(yaw(fr[i],23,24)-hy0)));}
+  const ang=(f)=>{const a=f.p[L.s],b=f.p[L.e],c=f.p[L.w];const v1=[a.x-b.x,a.y-b.y],v2=[c.x-b.x,c.y-b.y];const d=(v1[0]*v2[0]+v1[1]*v2[1])/(Math.hypot(...v1)*Math.hypot(...v2)||1);return Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI;};
+  const mid=(f,a,b)=>({x:(f.p[a].x+f.p[b].x)/2,y:(f.p[a].y+f.p[b].y)/2});
+  const spine=f=>{const s=mid(f,11,12),h=mid(f,23,24);return Math.atan2(s.x-h.x,-(s.y-h.y))*180/Math.PI;};
+  const torso=f=>{const s=mid(f,11,12),h=mid(f,23,24);return Math.hypot(s.x-h.x,s.y-h.y)||1;};
+  const tl=torso(fr[ad]);
+  const back=fr[top].t-fr[st].t,down=fr[imp].t-fr[top].t;
+  return{
+    tStart:fr[st].t,tTop:fr[top].t,tImp:fr[imp].t,tAd:fr[ad].t,
+    back,down,ratio:back/Math.max(down,0.001),
+    sTurn:sT,hTurn:hT,xf:Math.max(0,sT-hT),
+    armTop:ang(fr[top]),armImp:ang(fr[imp]),
+    spChg:Math.abs(spine(fr[imp])-spine(fr[ad])),
+    swayTop:(fr[top].p[0].x-fr[ad].p[0].x)/tl*100,
+    swayImp:(fr[imp].p[0].x-fr[ad].p[0].x)/tl*100
+  };
+}
+function card(key,m){
+  const name=LABEL[key];
+  if(!m)return `<div class="card"><h3>${name}</h3><div class="note">스윙 동작을 찾지 못했어요. 전신이 보이고 밝은 곳에서 다시 촬영해 보세요.</div></div>`;
+  const r=m.ratio;
+  const tempo=r>=2.6&&r<=3.5?'<span class="good">이상적 (3:1 근처)</span>':r<2.6?'백스윙이 짧거나 다운스윙이 느린 편':'백스윙이 느리거나 다운스윙이 빠른 편';
+  const kv=(a,b)=>`<div class="kv"><span>${a}</span><span>${b}</span></div>`;
+  return `<div class="card"><h3>${name} 분석</h3>
+  ${kv('템포 (백:다운)',`${r.toFixed(1)} : 1`)}
+  ${kv('백스윙 / 다운스윙',`${m.back.toFixed(2)}s / ${m.down.toFixed(2)}s`)}
+  <div style="color:var(--dim);font-size:12.5px;padding:2px 0 6px">${tempo}</div>
+  ${kv('어깨 회전 (추정)',`${m.sTurn.toFixed(0)}°`)}
+  ${kv('골반 회전 (추정)',`${m.hTurn.toFixed(0)}°`)}
+  ${kv('X-팩터 (추정)',`${m.xf.toFixed(0)}°`)}
+  ${kv('리드 팔 각도 (탑)',`${m.armTop.toFixed(0)}° <small style="color:var(--dim)">(180°=쭉 펴짐)</small>`)}
+  ${kv('리드 팔 각도 (임팩트)',`${m.armImp.toFixed(0)}°`)}
+  ${kv('상체 기울기 변화',`${m.spChg.toFixed(0)}°`)}
+  ${kv('머리 이동 (탑 / 임팩트)',`${m.swayTop.toFixed(0)}% / ${m.swayImp.toFixed(0)}%`)}
+  <div class="row" style="margin-top:10px"><button class="chip sm" data-jump="${key}:tAd">어드레스</button><button class="chip sm" data-jump="${key}:tTop">탑</button><button class="chip sm" data-jump="${key}:tImp">임팩트</button></div>
+  </div>`;
+}
+function renderResults(){
+  let html='';
+  for(const k of['A','B']){const s=SL[k];if(s.clip&&s.frames)html+=card(k,s.m);}
+  if(html)html+=`<div class="note">※ 카메라 한 대 기준의 추정값이에요. 촬영 각도·옷·조명에 따라 오차가 있어요. 같은 각도·거리에서 찍은 스윙끼리 비교할 때 가장 유용합니다.</div>`;
+  $('#res').innerHTML=html;
+}
+$('#res').addEventListener('click',e=>{
+  const b=e.target.closest('[data-jump]');if(!b)return;
+  const [k,f]=b.dataset.jump.split(':');const s=SL[k];if(!s.m)return;
+  if(playing)setPlaying(false);
+  T=k==='A'?s.m[f]:s.m[f]+align;T=Math.min(Math.max(T,0),Tmax());seekAll();updateUI();
+});
+async function runAnalysis(force,auto){
+  if(analyzing)return;
+  const targets=['A','B'].filter(k=>SL[k].clip&&(force||!SL[k].frames));
+  if(!targets.length){if(auto){autoAlign();seekAll();setPlaying(true);}else toast('분석할 영상이 없어요');return;}
+  analyzing=true;
+  if(playing)setPlaying(false);
+  const pg=$('#prog'),bar=pg.firstElementChild;pg.style.display='block';
+  const btn=$('#bAnalyze');btn.disabled=true;btn.textContent='AI 모델 불러오는 중…';
+  try{
+    for(let i=0;i<targets.length;i++){
+      const k=targets[i],s=SL[k];
+      btn.textContent=`${LABEL[k]} 분석 중…`;
+      s.m=await analyzeSlot(s,p=>{bar.style.width=((i+p)/targets.length*100)+'%';});
+      s.clip.frames=s.frames;s.clip.m=s.m;
+    }
+    autoAlign();renderResults();renderHist();seekAll();updateUI();
+    if(auto)setPlaying(true);
+  }catch(e){toast('분석 실패: '+(e.message||e),5000);}
+  pg.style.display='none';bar.style.width='0';
+  analyzing=false;btn.disabled=false;btn.textContent='🧠 자세 분석 다시 실행';
+}
+$('#bAnalyze').onclick=()=>{
+  if(!SL.A.clip&&!SL.B.clip){toast('영상을 먼저 선택하세요');return;}
+  runAnalysis(true,false);
+};
+
+/* ---------- 홈/모니터/카메라 버튼 ---------- */
+(function(){let emb=false;try{emb=window.self!==window.top;}catch(e){emb=true;}
+  if(emb||!window.RTCPeerConnection||!navigator.mediaDevices)$('#envWarn').style.display='block';})();
+$('#bView').onclick=()=>{S.role='view';S.net='';show('monitor');monUI();startViewer();};
+$('#bCam').onclick=()=>{$('#joinRow').style.display='flex';$('#codeIn').focus();};
+$('#bJoinGo').onclick=async()=>{
+  const c=$('#codeIn').value.trim();if(c.length!==4){toast('4자리 코드를 입력하세요');return;}
+  S.role='cam';S.net='';
+  startCamPeer(c);          // 카메라와 상관없이 먼저 연결 시도
+  await enterCam('cam');
+};
+$('#bSolo').onclick=()=>enterCam('solo');
+$('#bImport').onclick=()=>{S.role='solo';openReview(null,null);};
+$('#bMonImport').onclick=()=>openReview(null,null);
+$('#monBack').onclick=leaveAll;
+$('#bRemote').onclick=()=>{
+  if(!connected()){toast('촬영폰이 아직 연결되지 않았어요');return;}
+  S.conn.send({type:'rec',dur:+$('#monDur').value*1000});toast('촬영폰에서 3초 뒤 촬영이 시작돼요');
+};
+$('#bBack').onclick=leaveAll;
+$('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메라가 켜졌어요');};
+$('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';startViewer();};
+$('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
+$('#fpsSel').onchange=()=>openCamera();
+$('#bRec').onclick=onRecBtn;
+</script>
+</body>
+</html>
