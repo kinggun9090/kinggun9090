@@ -246,13 +246,41 @@ html,body{position:fixed;inset:0;width:100%;overflow:hidden}
 .chip,.pill,select{box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .l,.tile .k,.tile .d,.kv{font-size:12px}
 .tile .l{letter-spacing:.3px}
+
+/* ======== v25: 영상 꽉 채우기(부모 기준) + 촬영 화면 정렬 ======== */
+#preview,#liveVideo{position:absolute!important;left:0!important;top:0!important;right:0;bottom:0;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;transform:none}
+#live{display:flex!important;visibility:hidden;pointer-events:none;flex-direction:column}
+#live.active{visibility:visible;pointer-events:auto}
+#cam .top,#live .top{left:16px;right:16px;gap:8px;row-gap:8px;display:grid;align-items:stretch}
+#cam .top{grid-template-columns:1fr 1.5fr 1fr}
+#cam .top>*{justify-content:center;text-align:center;min-width:0}
+#cam #pillConn{grid-column:1 / -1;order:0;flex:none}
+#live .top{grid-template-columns:auto auto 1fr auto}
+#live .top>*{justify-content:center;min-width:0}
+#live #lvRecInd{position:fixed}
+#cam .pill,#cam .chip,#live .pill,#live .chip{font-size:11px!important;height:28px!important;min-height:28px!important;padding:0 8px!important}
+#cam .bottom{left:16px;right:16px;gap:14px}
+#cam .bottom .row:first-child{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:340px}
+#cam .bottom .row:first-child select{width:100%;height:32px!important;min-height:32px!important;font-size:12px!important;text-align:center;text-align-last:center}
+#cam .toolcol{right:16px;gap:10px}
+#cam #expWrap{right:64px}
+#cam #photoBtn{right:16px}
+#cam .zoomrow{bottom:calc(env(safe-area-inset-bottom) + 184px);gap:6px}
+#cam .zoomrow .chip,#lvZoom .chip{min-width:46px;height:30px!important;min-height:30px!important;font-size:12px!important}
+.zoomrow .chip.on,#lvZoom .chip.on{background:var(--acc)!important;color:#031a18!important;border-color:var(--acc)!important;font-weight:800!important}
+#lvZoom{position:absolute;left:0;right:0;bottom:calc(100% + 6px);display:flex;justify-content:center;gap:8px}
+#toast{top:42%!important}
+#live .bottom .row:first-child{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:340px}
+#live .bottom{left:16px;right:16px;gap:14px}
+#live .bottom select{width:100%;height:32px!important;min-height:32px!important;font-size:12px!important;text-align:center;text-align-last:center}
+#lvZoom{bottom:calc(100% + 12px)!important}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v24</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v25</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -847,7 +875,8 @@ function tuneLive(call){
 function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style.display='block';}else m.style.display='none';}
 function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
 function goLive(){
-  show('live');
+  show('live');applyFit();
+  if(!document.querySelector('#lvZoom .chip.on')){const b=document.querySelector('#lvZoom .chip[data-z="1"]');if(b)b.classList.add('on');}
   const lv=$('#liveVideo');const fix=()=>{forceFull();try{const st=lv.srcObject;if(st){lv.srcObject=null;lv.srcObject=st;}lv.play().catch(()=>{});}catch(e){}};
   forceFull();requestAnimationFrame(()=>{forceFull();});[80,300,900,2000].forEach(t=>setTimeout(forceFull,t));setTimeout(fix,120);
   if(!$('#liveVideo').srcObject)lvMsg('📡 촬영폰 화면 불러오는 중…');
@@ -1377,8 +1406,9 @@ $('#bBack').onclick=leaveAll;
 function tryFullscreen(){try{const e=document.documentElement;if(!document.fullscreenElement&&e.requestFullscreen)e.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(x){}}
 let fitContain=false;try{fitContain=localStorage.getItem('swinglab_fit')==='contain';}catch(e){}
 function forceFull(){
-  const w=Math.max(window.innerWidth,screen.width&&window.innerWidth?window.innerWidth:0),h=Math.max(window.innerHeight,document.documentElement.clientHeight);
-  ['preview','liveVideo'].forEach(id=>{const v=$('#'+id);if(!v)return;v.style.width=w+'px';v.style.height=h+'px';});
+  ['preview','liveVideo'].forEach(id=>{const v=$('#'+id);if(!v||!v.parentElement)return;
+    const p=v.parentElement,w=p.clientWidth||window.innerWidth,h=p.clientHeight||window.innerHeight;
+    v.style.width=w+'px';v.style.height=h+'px';});
 }
 ['resize','orientationchange','pageshow'].forEach(ev=>window.addEventListener(ev,()=>{forceFull();setTimeout(forceFull,300);}));
 setInterval(forceFull,1500);
