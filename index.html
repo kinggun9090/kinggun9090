@@ -369,7 +369,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v43</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v44</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -441,14 +441,12 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
   <div class="toolcol">
     <button class="tb" id="tbGrid" aria-label="격자">▦</button>
     <button class="tb on" id="tbLevel" aria-label="수평선">⎯</button>
-    <button class="tb" id="tbSelfie" aria-label="셀카">🤳</button>
-    <button class="tb" id="tbWide" aria-label="광각" style="font-size:11px;font-weight:700">광각</button>
     <button class="tb" id="tbTorch" aria-label="손전등" style="display:none">🔦</button>
     <button class="tb" id="tbExp" aria-label="밝기" style="display:none">☀︎</button>
   </div>
   <div id="expWrap"><input type="range" id="expRange" min="-2" max="2" step="0.1" value="0"></div>
   <div id="zoomHud"></div>
-  <div class="zoomrow" id="zoomRow"><button class="chip" data-z="0.5">.5</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2</button><button class="chip" data-z="3">3</button></div>
+  <div class="zoomrow" id="zoomRow"><button class="chip" data-z="0.5">0.5x</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2x</button><button class="chip" data-z="3">3x</button></div>
   <div class="stack">
     <div class="msg" id="camMsg"></div>
     <button class="btn pri" id="camRetry" style="display:none;text-align:center">📷 카메라 켜기 (허용 누르기)</button>
@@ -487,7 +485,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
     <button class="tb" id="lvFxBtn" aria-label="보정">✨</button>
   </div>
   <div id="lvModeBar"><button data-m="photo">사진</button><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button></div>
-  <div class="zoomrow" id="lvZoom"><button class="chip" data-z="0.5">.5</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2</button><button class="chip" data-z="3">3</button></div>
+  <div class="zoomrow" id="lvZoom"><button class="chip" data-z="0.5">0.5x</button><button class="chip on" data-z="1">1x</button><button class="chip" data-z="2">2x</button><button class="chip" data-z="3">3x</button></div>
   <div class="stack">
     <div class="msg" id="lvMsg" style="display:block">📡 촬영폰 화면 불러오는 중…</div>
     <button class="btn pri" id="lvPhoto" style="display:none;text-align:center">📷 사진첩에 저장</button>
@@ -677,7 +675,7 @@ async function openCamera(){
   if(!S.stream){$('#pillFps').textContent='카메라 꺼짐';camFail(err);return false;}
   const track=S.stream.getVideoTracks()[0];
   // 2) 켜진 뒤에 해상도/fps 상향 시도 (실패해도 무시)
-  const rh=+$('#resSel').value||1080,rw=Math.round(rh*((S.facing==='user'&&S.wideFront)?4/3:16/9));
+  const rh=+$('#resSel').value||1080,rw=Math.round(rh*16/9);
   try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh},frameRate:{ideal:fps}});}catch(e){try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh}});}catch(e2){}}
   const v=$('#preview');v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');v.srcObject=S.stream;
   try{await v.play();}catch(e){}
@@ -1617,8 +1615,8 @@ function initCamTools(){
 }
 function paintZoom(z,sel){
   let best=null,bd=9;
-  document.querySelectorAll((sel||'#zoomRow')+' .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z==='0.5'?'.5':b.dataset.z==='1'?'1x':b.dataset.z;if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
-  if(best){best.classList.add('on');best.textContent=(bd<0.05)?(best.dataset.z==='0.5'?'.5x':best.dataset.z+'x'):z.toFixed(1)+'x';}
+  document.querySelectorAll((sel||'#zoomRow')+' .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z+'x';if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
+  if(best){best.classList.add('on');best.textContent=(bd<0.05)?best.dataset.z+'x':z.toFixed(1)+'x';}
 }
 function sendZoom(){if(S.role==='cam'&&connected()){try{S.conn.send({type:'zoom',z:S.swScale||1,label:S.zoom});}catch(e){}}}
 async function switchLens(kind){
@@ -2038,19 +2036,6 @@ $('#bGoLive').onclick=()=>goLive();
 $('#bToLive').onclick=()=>{setPlaying(false);goLive();};
 $('#camRetry').onclick=async()=>{const ok=await openCamera();if(ok)toast('카메라가 켜졌어요');};
 $('#monRetry').onclick=()=>{try{if(S.peer)S.peer.destroy();}catch(e){}S.peer=null;S.conn=null;S.net='';S.viewTries=0;S.viewBusy=false;S.viewWanted=true;toast('촬영폰에 연결 시도 중…');S.ntBusy=false;viewerConnect();};
-function paintSelfieWide(){
-  const front=S.facing==='user';
-  $('#tbSelfie').classList.toggle('on',front);
-  $('#tbWide').classList.toggle('on',front?!!S.wideFront:(S.lens==='ultra'||(S.zoom||1)<0.99));
-}
-$('#tbSelfie').onclick=async()=>{if(S.recording)return;S.facing=S.facing==='environment'?'user':'environment';S.lens='main';S.deviceId=null;await openCamera();paintSelfieWide();toast(S.facing==='user'?'셀카 모드':'후면 카메라',1200);};
-$('#tbWide').onclick=async()=>{
-  if(S.recording)return;
-  if(S.facing==='user'){S.wideFront=!S.wideFront;await openCamera();toast(S.wideFront?'셀카 광각 (넓게 보기)':'셀카 기본',1400);}
-  else{const on=S.lens==='ultra'||(S.zoom||1)<0.99;await setZoom(on?1:0.5);if(!on)toast('광각 (0.5x)',1200);}
-  paintSelfieWide();
-};
-setInterval(paintSelfieWide,700);
 $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environment';await openCamera();};
 $('#fpsSel').onchange=()=>openCamera();
 $('#resSel').onchange=()=>openCamera();
