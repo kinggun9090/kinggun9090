@@ -357,13 +357,18 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 #levelRef,#lvLevelRef{height:1px!important;margin-top:0!important}
 #levelRef i,#lvLevelRef i{height:1px!important;border-radius:0!important}
 #levelLn.ok,#lvLevelLn.ok{background:#ffd54a!important}
+#camRecInd{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 92px);transform:translateX(-50%);z-index:6;display:none;justify-content:center;align-items:center;gap:6px;height:var(--ctl)!important;padding:0 12px!important;background:rgba(0,0,0,.55)!important;color:var(--txt)!important;font-size:var(--fs)!important;font-weight:600!important;border:var(--bd)!important;border-radius:var(--r)!important;pointer-events:none}
+#camRecInd.on{display:inline-flex!important}
+#camRecInd #camTimer{font-variant-numeric:tabular-nums}
+#camRecInd span:first-child{animation:recb 1s infinite}
+@keyframes recb{50%{opacity:.25}}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v40</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v41</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -429,6 +434,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
     <span class="pill" id="pillRole" style="display:none"></span>
   </div>
   <div id="count"></div>
+  <span class="pill rec" id="camRecInd" style="display:none"><span style="color:var(--red)">●</span> REC <span id="camTimer">0:00</span></span>
   <div id="gridOv"></div><div id="levelRef"><i></i><i></i></div><div id="levelLn"></div><div id="shotFlash"></div><div id="cineOv"><i id="cbT"></i><i id="cbB"></i></div>
   <div id="modeBar"><button data-m="photo">사진</button><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button></div>
   <div class="toolcol">
@@ -1043,6 +1049,11 @@ function startRec(dur){
   })();
   setTimeout(()=>{if(!S.recording)return;doStart(dur);},3000);
 }
+function recIndShow(on){
+  const el=$('#camRecInd');if(!el)return;
+  clearInterval(recIndShow.h);el.classList.toggle('on',!!on);
+  if(on){const t0=performance.now();const f=()=>{const sec=Math.floor((performance.now()-t0)/1000);$('#camTimer').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');};f();recIndShow.h=setInterval(f,250);}
+}
 function doStart(dur){
   S.chunks=[];
   const mime=pickMime();
@@ -1054,19 +1065,19 @@ function doStart(dur){
   r.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};
   r.onstart=()=>{S.recStart=performance.now();};
   r.onstop=()=>{if(S.recCleanup){S.recCleanup();S.recCleanup=null;}finishRec(r.mimeType||mime||'video/mp4');};
-  r.start(200);
+  r.start(200);recIndShow(true);
   beep(1200,.15);
   if(S.role==='cam'&&connected())S.conn.send({type:'state',s:'rec'});
   $('#bRec').className='recbtn stop';
   S.autoStop=setTimeout(stopRec,dur);
 }
 function stopRec(){
-  clearTimeout(S.autoStop);
+  clearTimeout(S.autoStop);recIndShow(false);
   if(S.rec&&S.rec.state!=='inactive'){S.stopAt=performance.now();S.rec.stop();}
   else{S.recording=false;$('#count').style.display='none';$('#bRec').className='recbtn';if(S.role==='cam'&&connected())S.conn.send({type:'state',s:'idle'});}
 }
 async function finishRec(mime){
-  S.recording=false;$('#bRec').className='recbtn';
+  recIndShow(false);S.recording=false;$('#bRec').className='recbtn';
   const blob=new Blob(S.chunks,{type:mime});
   const dur=(S.stopAt-S.recStart)/1000;
   if(S.role==='cam'){
