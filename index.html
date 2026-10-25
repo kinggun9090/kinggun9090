@@ -368,7 +368,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v41</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v42</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -458,7 +458,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
       <select id="fpsSel"><option value="30">30fps</option><option value="60" selected>60fps</option><option value="120">120fps</option><option value="240">240fps</option></select>
     </div>
     <div class="row" style="gap:28px">
-      <button class="round" id="bBack" aria-label="사진첩에 저장">🗂</button>
+      <button class="round" id="bBack" aria-label="저장된 스윙">🗂</button>
       <button class="recbtn" id="bRec" aria-label="촬영"></button>
       <button class="round" id="bFlip">🔄</button>
     </div>
@@ -1531,7 +1531,10 @@ $('#bRemote').onclick=()=>{
   S.conn.send({type:'rec',dur:+$('#monDur').value*1000});toast('촬영폰에서 3초 뒤 촬영이 시작돼요');
 };
 $('#bBackTop').onclick=leaveAll;
-$('#bBack').onclick=()=>{if(S.photoQ&&S.photoQ.length)savePhotos();else toast('저장할 새 영상이 없어요');};
+$('#bBack').onclick=()=>{
+  if(S.role==='solo'){if(S.recording)stopRec();closeCamera();S.role='solo';setMonitorMode(true);show('monitor');renderHist();return;}   // 폰 한 대: 저장된 스윙 목록 열기
+  if(S.photoQ&&S.photoQ.length)savePhotos();else toast('저장할 새 영상이 없어요');
+};
 function tryFullscreen(){try{const e=document.documentElement;if(!document.fullscreenElement&&e.requestFullscreen)e.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(x){}}
 let fitContain=false;try{fitContain=localStorage.getItem('swinglab_fit')==='contain';}catch(e){}
 function forceFull(){
