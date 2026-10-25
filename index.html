@@ -346,13 +346,16 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 #photoCard img{width:54px;height:72px;object-fit:cover;border-radius:8px;border:var(--bd)}
 #photoCard .chip{height:34px!important;min-height:34px!important}
 #photoCard #pcSave{border-color:var(--acc)!important;color:var(--acc)}
+
+/* ======== v36: 부드러운 줌 ======== */
+#liveVideo,#lvFxCv{transition:transform .12s linear}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v35</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v36</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1167,7 +1170,7 @@ async function openReview(a,b,opts={}){
   $('#bRecAgain').textContent=S.role==='view'?'● 다시 촬영 (A폰)':'● 다시 촬영';
   $('#bToLive').style.display=(S.role==='view'&&connected())?'inline-block':'none';
   $('#rBack').textContent=S.role==='view'?'← 라이브':(S.savedMode?'← 목록':'← 홈');
-  speed=1;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===1));setCompare(!!opts.compare);
+  speed=1;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===1));setCompare(!!opts.compare||(cmpPref()&&!!b));
   playing=false;$('#bPlay').textContent='▶';T=0;align=0;$('#res').innerHTML='';
   $('#rTitle').textContent=a&&a.n?`SWING #${a.n}`:'SWING ANALYSIS';
   for(const k of['A','B']){const s=SL[k];s.clip=null;s.dur=0;s.frames=null;s.m=null;s.video.pause();s.video.removeAttribute('src');s.video.load();s.empty.style.display='flex';}
@@ -1255,7 +1258,7 @@ $('#speeds').addEventListener('click',e=>{
 });
 $('#tSkel').onclick=e=>{skel=!skel;e.target.classList.toggle('on',skel);};
 $('#tLoop').onclick=e=>{loop=!loop;e.target.classList.toggle('on',loop);};
-$('#tCmp').onclick=()=>setCompare(!compare);
+$('#tCmp').onclick=()=>{setCompare(!compare);try{localStorage.setItem('swinglab_cmp',compare?'1':'0');}catch(e){}};
 $('#bAlignOff').onclick=()=>{align=0;seekAll();updateUI();toast('정렬을 해제했어요');};
 $('#bAlignImp').onclick=()=>{
   const a=SL.A.m,b=SL.B.m;
@@ -1361,6 +1364,7 @@ function card(key,m){
   <div class="row" style="margin-top:10px"><button class="chip sm" data-jump="${key}:tAd">어드레스</button><button class="chip sm" data-jump="${key}:tTop">탑</button><button class="chip sm" data-jump="${key}:tImp">임팩트</button></div>
   </div>`;
 }
+function cmpPref(){try{return localStorage.getItem('swinglab_cmp')==='1';}catch(e){return false;}}
 function setCompare(on){
   compare=!!on;
   $('#panes').classList.toggle('single',!compare);
@@ -1572,7 +1576,7 @@ function initCamTools(){
   const front=S.facing==='user';
   document.querySelectorAll('#zoomRow .chip').forEach(b=>{const z=+b.dataset.z;b.style.display=(front&&z<1)||(S.hwZoom&&(z<S.zoomMin-0.01||z>S.zoomMax+0.01))?'none':'';});
   S.swScale=1;$('#preview').style.transform='';
-  S.zoom=(S.lens==='ultra'&&!S.hwZoom)?0.5:1;
+  S.zoom=(S.lens==='ultra'&&!S.hwZoom)?0.5:1;S.zCur=S.zTarget=S.zoom;S.zAnim=false;S.zHW=false;S.zPend=null;
   paintZoom(S.zoom);
   sendZoom();
 }
@@ -1589,19 +1593,35 @@ async function switchLens(kind){
   toast(kind==='ultra'?'초광각으로 전환 중…':'기본 렌즈로 전환 중…',1500);
   await openCamera();return true;
 }
+function zoomApply(z){
+  if(S.hwZoom){
+    const t=camTrack();if(!t)return;
+    if(S.zHW){S.zPend=z;return;}
+    S.zHW=true;S.swScale=1;$('#preview').style.transform='';
+    t.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{}).finally(()=>{S.zHW=false;if(S.zPend!=null){const p=S.zPend;S.zPend=null;zoomApply(p);}});
+  }else{S.swScale=z>1.001?z:1;$('#preview').style.transform=S.swScale>1?'scale('+z.toFixed(4)+')':'';}
+}
+function zoomLoop(){
+  const d=S.zTarget-S.zCur;
+  if(Math.abs(d)<0.004){S.zCur=S.zTarget;zoomApply(S.zCur);paintZoom(S.zCur);sendZoom();S.zAnim=false;return;}
+  S.zCur+=d*0.3;zoomApply(S.zCur);
+  S.zF=(S.zF||0)+1;if(S.zF%3===0){paintZoom(S.zCur);}
+  const n=performance.now();if(n-(S.zSend||0)>70){S.zSend=n;sendZoom();}
+  requestAnimationFrame(zoomLoop);
+}
 async function setZoom(z){
   if(S.recording||S.zoomBusy)return;
   z=Math.min(S.zoomMax||4,Math.max(S.zoomMin||0.5,z));
-  const t=camTrack();
-  if(S.hwZoom&&t){S.zoom=z;t.applyConstraints({advanced:[{zoom:z}]}).catch(()=>{});S.swScale=1;$('#preview').style.transform='';paintZoom(z);sendZoom();return;}
-  // 하드웨어 줌이 없으면: 0.5 → 초광각 렌즈, 그 이상 → 기본 렌즈 + 소프트웨어 줌
-  if(S.facing==='environment'){
-    if(z<1&&S.lens!=='ultra'){S.zoomBusy=true;const ok=await switchLens('ultra');S.zoomBusy=false;if(!ok){S.lens='main';paintZoom(S.zoom);}return;}
-    if(z>=1&&S.lens==='ultra'){S.zoomBusy=true;await switchLens('main');S.zoomBusy=false;}
-  }else if(z<1)z=1;
-  z=Math.max(z,S.lens==='ultra'?0.5:1);
-  S.zoom=z;S.swScale=z>1.001?z:1;$('#preview').style.transform=S.swScale>1?'scale('+z+')':'';
-  paintZoom(z);sendZoom();
+  if(!S.hwZoom){
+    // 하드웨어 줌이 없으면: 0.5 → 초광각 렌즈, 그 이상 → 기본 렌즈 + 소프트웨어 줌
+    if(S.facing==='environment'){
+      if(z<1&&S.lens!=='ultra'){S.zoomBusy=true;const ok=await switchLens('ultra');S.zoomBusy=false;if(!ok){S.lens='main';paintZoom(S.zoom);}return;}
+      if(z>=1&&S.lens==='ultra'){S.zoomBusy=true;await switchLens('main');S.zoomBusy=false;S.zCur=1;}
+    }else if(z<1)z=1;
+    z=Math.max(z,S.lens==='ultra'?0.5:1);
+  }
+  S.zoom=z;S.zTarget=z;
+  if(!S.zAnim){S.zAnim=true;if(!(S.zCur>0))S.zCur=1;requestAnimationFrame(zoomLoop);}
 }
 document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>{if(S.justDragged)return;setZoom(+b.dataset.z);});
 // 줌 드래그 (줌 바를 좌우로 밀기)
@@ -1621,7 +1641,7 @@ document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=()=>{if(S.justD
   lr.addEventListener('touchmove',e=>{
     const dx=e.touches[0].clientX-lx;if(!ld&&Math.abs(dx)<8)return;ld=true;e.preventDefault();
     const z=Math.max(0.5,Math.min(6,lz*Math.pow(2,dx/120)));
-    if(performance.now()-lt>120&&connected()){lt=performance.now();S.conn.send({type:'zoomset',z});}
+    if(performance.now()-lt>50&&connected()){lt=performance.now();S.conn.send({type:'zoomset',z});}
   },{passive:false});
   lr.addEventListener('touchend',()=>{if(ld){S.justDragged=true;setTimeout(()=>{S.justDragged=false;},350);}ld=false;},{passive:true});
 })();
@@ -1670,7 +1690,7 @@ $('#pcClose').onclick=()=>{$('#photoCard').style.display='none';};
   const el=$('#live');let d0=0,z0=1,t0=0;
   const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
   el.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e);z0=S.rz||1;}},{passive:true});
-  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const z=Math.max(0.5,Math.min(6,z0*dist(e)/d0));if(performance.now()-t0>120&&connected()){t0=performance.now();S.conn.send({type:'zoomset',z});}}},{passive:false});
+  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const z=Math.max(0.5,Math.min(6,z0*dist(e)/d0));if(performance.now()-t0>50&&connected()){t0=performance.now();S.conn.send({type:'zoomset',z});}}},{passive:false});
   el.addEventListener('touchend',e=>{if(e.touches.length<2)d0=0;},{passive:true});
 })();
 // 핀치 줌
