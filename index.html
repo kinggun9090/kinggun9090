@@ -106,6 +106,7 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--dim
 .panes.single #pA{max-height:62vh}
 .phase{position:absolute;right:8px;top:8px;z-index:2;font-size:10.5px;letter-spacing:1.6px;font-weight:600;padding:4px 9px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--line);display:none}
 .phase.hot{border-color:var(--acc);color:var(--acc)}
+.stagemsg:empty{display:none!important}
 .stagemsg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(0,0,0,.7);backdrop-filter:blur(6px);padding:7px 14px;border-radius:999px;font-size:12.5px;letter-spacing:.6px;z-index:3;display:none;white-space:nowrap}
 .ticks{position:relative;height:20px;margin:0 6px}
 .ticks span{position:absolute;bottom:0;transform:translateX(-50%);font-size:9.5px;letter-spacing:1px;color:var(--dim);text-align:center}
@@ -362,7 +363,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v39</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v40</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1235,15 +1236,24 @@ function drawOverlay(s){
 }
 function tick(ts){
   if(playing){
-    const dt=(ts-lastTs)/1000;lastTs=ts;T+=dt*speed;
+    const dt=(ts-lastTs)/1000;lastTs=ts;
+    const mA=SL.A.clip&&!SL.A.video.paused&&!SL.A.video.seeking&&SL.A.video.currentTime>0&&SL.A.video.currentTime<SL.A.dur-0.03;
+    // 영상 자체 시계를 기준으로 삼아 끊김(재탐색) 줄이기
+    if(mA&&Math.abs(SL.A.video.currentTime-T)<0.4)T=SL.A.video.currentTime;else T+=dt*speed;
     if(T>=Tmax()){
       if(loop){T=0;seekAll();}
       else{T=Tmax();setPlaying(false);}
     }else for(const k of['A','B']){
       const s=SL[k];if(!s.clip||(k==='B'&&!compare))continue;const t=slotT(s);
       if(t>=0&&t<=s.dur){
-        if(s.video.paused){s.video.currentTime=t;s.video.play().catch(()=>{});}
-        else if(Math.abs(s.video.currentTime-t)>0.12)s.video.currentTime=t;
+        if(s.video.paused){s.video.currentTime=t;s.video.playbackRate=speed;s.video.play().catch(()=>{});}
+        else if(s.video.seeking){}
+        else{
+          const diff=s.video.currentTime-t;
+          if(Math.abs(diff)>0.5)s.video.currentTime=t;
+          else if(k==='B'||Math.abs(diff)>0.08){const adj=Math.max(-0.2,Math.min(0.2,-diff*1.2));s.video.playbackRate=Math.max(0.0625,speed*(1+adj));}
+          else s.video.playbackRate=speed;
+        }
       }else if(!s.video.paused)s.video.pause();
     }
     updateUI();
