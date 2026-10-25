@@ -352,7 +352,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v34</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v35</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -964,11 +964,11 @@ function tuneLive(call){
   }catch(e){}
 }
 function lvMsg(t){const m=$('#lvMsg');if(!m)return;if(t){m.textContent=t;m.style.display='block';}else m.style.display='none';}
-function attachLive(st){const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
+function attachLive(st){liveCrop.r=null;const v=$('#liveVideo');v.srcObject=st;v.muted=true;v.play().catch(()=>{});lvMsg('');}
 function goLive(){
   show('live');applyFit();updateViewFx();
   if(!document.querySelector('#lvZoom .chip.on'))paintZoom(S.rz||1,'#lvZoom');
-  const lv=$('#liveVideo');const fix=()=>{forceFull();try{const st=lv.srcObject;if(st){lv.srcObject=null;lv.srcObject=st;}lv.play().catch(()=>{});}catch(e){}};
+  const lv=$('#liveVideo');const fix=()=>{forceFull();try{lv.play().catch(()=>{});liveCrop.r=null;}catch(e){}};
   forceFull();requestAnimationFrame(()=>{forceFull();});[80,300,900,2000].forEach(t=>setTimeout(forceFull,t));setTimeout(fix,120);
   if(!$('#liveVideo').srcObject)lvMsg('📡 촬영폰 화면 불러오는 중…');
   clearTimeout(S.lvHint);
@@ -1776,10 +1776,11 @@ S.beauty=0;S.fx='none';S.fxActive=false;S.lvFxOn=false;
 try{S.beauty=+localStorage.getItem('swinglab_beauty')||0;S.fx=localStorage.getItem('swinglab_fx')||'none';}catch(e){}
 let fxSmall=null;
 function fxOn(){return S.beauty>0||S.fx!=='none';}
-function fxDraw(cx,W,H,src,z,full){
+function fxDraw(cx,W,H,src,z,full,crop){
   cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
   z=z>1.001?z:1;
-  cx.drawImage(src,(W-W/z)/2,(H-H/z)/2,W/z,H/z,0,0,W,H);
+  if(crop){const SW=src.videoWidth||src.width,SH=src.videoHeight||src.height;cx.drawImage(src,crop.x*SW,crop.y*SH,crop.w*SW,crop.h*SH,0,0,W,H);}
+  else cx.drawImage(src,(W-W/z)/2,(H-H/z)/2,W/z,H/z,0,0,W,H);
   if(full&&S.beauty>0){
     const k=S.beauty/100,sw=Math.max(2,Math.round(W/8)),sh=Math.max(2,Math.round(H/8));
     const sc=fxSmall||(fxSmall=document.createElement('canvas'));if(sc.width!==sw||sc.height!==sh){sc.width=sw;sc.height=sh;}
@@ -1826,17 +1827,42 @@ function reviewFilterCss(){
   switch(S.fx){case 'pure':f.push('brightness(1.08)','saturate(1.05)','hue-rotate(-6deg)');break;case 'warm':f.push('sepia(.25)','saturate(1.15)','brightness(1.04)');break;case 'cool':f.push('hue-rotate(14deg)','saturate(1.08)','brightness(1.02)');break;case 'film':f.push('sepia(.2)','contrast(1.08)','saturate(.95)');break;case 'mono':f.push('grayscale(1)');break;}
   return f.join(' ')||'none';
 }
+/* 라이브 화면: 영상 가장자리 검은 여백을 감지해서 잘라내고 화면을 꽉 채움 */
+function liveCrop(v){
+  const now=performance.now();
+  if(liveCrop.r&&now-(liveCrop.t||0)<500)return liveCrop.r;
+  liveCrop.t=now;
+  const w=48,h=Math.max(8,Math.round(48*v.videoHeight/v.videoWidth));
+  const c=liveCrop.c||(liveCrop.c=document.createElement('canvas'));c.width=w;c.height=h;
+  const x=c.getContext('2d',{willReadFrequently:true});
+  let r={x:0,y:0,w:1,h:1};
+  try{
+    x.drawImage(v,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
+    const lum=(i,j)=>{const k=(j*w+i)*4;return d[k]*.3+d[k+1]*.59+d[k+2]*.11;};
+    const T=14;
+    const rowDark=j=>{for(let i=0;i<w;i++)if(lum(i,j)>T)return false;return true;};
+    const colDark=i=>{for(let j=0;j<h;j++)if(lum(i,j)>T)return false;return true;};
+    let top=0,bot=h-1,lef=0,rig=w-1;
+    while(top<h-2&&rowDark(top))top++;while(bot>top+1&&rowDark(bot))bot--;
+    while(lef<w-2&&colDark(lef))lef++;while(rig>lef+1&&colDark(rig))rig--;
+    const mx=(lef+(w-1-rig))/w,my=(top+(h-1-bot))/h;
+    if((mx>0.06||my>0.06)&&(rig-lef)>w*0.25&&(bot-top)>h*0.25){const e=0.012;r={x:lef/w+e,y:top/h+e,w:(rig-lef+1)/w-2*e,h:(bot-top+1)/h-2*e};}
+  }catch(e){}
+  liveCrop.r=r;return r;
+}
 function liveFxLoop(t){
   if(!S.lvFxOn)return;
   requestAnimationFrame(liveFxLoop);
   if(t-(liveFxLoop.t||0)<30)return;liveFxLoop.t=t;
   const v=$('#liveVideo'),cv=$('#lvFxCv');
   if(!v.videoWidth||!$('#live').classList.contains('active'))return;
-  if(cv.width!==v.videoWidth||cv.height!==v.videoHeight){cv.width=v.videoWidth;cv.height=v.videoHeight;}
-  try{fxDraw(cv.getContext('2d'),cv.width,cv.height,v,1,true);}catch(e){}
+  const r=liveCrop(v);
+  const W=Math.max(2,Math.round(r.w*v.videoWidth)),H=Math.max(2,Math.round(r.h*v.videoHeight));
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  try{fxDraw(cv.getContext('2d'),W,H,v,1,true,r);}catch(e){}
 }
 function updateViewFx(){
-  const on=fxOn()&&S.role==='view';
+  const on=S.role==='view';
   const was=S.lvFxOn;S.lvFxOn=on;
   $('#lvFxCv').style.display=on?'block':'none';
   $('#liveVideo').style.opacity=on?'0':'1';
@@ -1901,7 +1927,7 @@ async function focusAt(nx,ny){
   }catch(e){return false;}
 }
 function tapNorm(v,ev){
-  const r=v.getBoundingClientRect(),vw=v.videoWidth||r.width,vh=v.videoHeight||r.height;
+  const r=v.getBoundingClientRect(),vw=v.videoWidth||v.width||r.width,vh=v.videoHeight||v.height||r.height;
   const contain=v.classList.contains('fitContain');
   const sc=contain?Math.min(r.width/vw,r.height/vh):Math.max(r.width/vw,r.height/vh);
   const dw=vw*sc,dh=vh*sc,ox=(r.width-dw)/2,oy=(r.height-dh)/2;
@@ -1915,8 +1941,8 @@ $('#preview').addEventListener('click',async ev=>{
 });
 $('#liveVideo').addEventListener('click',ev=>{
   if(!connected())return;
-  const n=tapNorm($('#liveVideo'),ev);ring(ev.clientX,ev.clientY);
-  S.conn.send({type:'focus',x:n.x,y:n.y});
+  const cv=$('#lvFxCv'),n=tapNorm(cv.style.display==='none'?$('#liveVideo'):cv,ev),cr=(cv.style.display==='none'?null:liveCrop.r)||{x:0,y:0,w:1,h:1};ring(ev.clientX,ev.clientY);
+  S.conn.send({type:'focus',x:cr.x+n.x*cr.w,y:cr.y+n.y*cr.h});
 });
 /* 마지막으로 들어간 칸 표시 */
 function markLast(id){try{localStorage.setItem('swinglab_last',id);}catch(e){}paintLast();}
