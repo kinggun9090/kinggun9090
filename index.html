@@ -363,13 +363,15 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 #camRecInd #camTimer{font-variant-numeric:tabular-nums}
 #camRecInd span:first-child{animation:recb 1s infinite}
 @keyframes recb{50%{opacity:.25}}
+#autoSt{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 136px);transform:translateX(-50%);z-index:6;max-width:86vw;text-align:center;white-space:normal;background:rgba(0,0,0,.6)!important;pointer-events:none;line-height:1.35;padding:6px 12px!important}
+#autoSt.go{color:#ffd54a}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v46</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v47</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -435,12 +437,14 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
     <span class="pill" id="pillRole" style="display:none"></span>
   </div>
   <div id="count"></div>
+  <span class="pill" id="autoSt" style="display:none"></span>
   <span class="pill rec" id="camRecInd" style="display:none"><span style="color:var(--red)">●</span> REC <span id="camTimer">0:00</span></span>
   <div id="gridOv"></div><div id="levelRef"><i></i><i></i></div><div id="levelLn"></div><div id="shotFlash"></div><div id="cineOv"><i id="cbT"></i><i id="cbB"></i></div>
   <div id="modeBar"><button data-m="photo">사진</button><button data-m="video" class="on">비디오</button><button data-m="cine">시네마틱</button></div>
   <div class="toolcol">
     <button class="tb" id="tbGrid" aria-label="격자">▦</button>
     <button class="tb on" id="tbLevel" aria-label="수평선">⎯</button>
+    <button class="tb" id="tbAuto" aria-label="자동 촬영" style="font-size:11px;font-weight:700">AUTO</button>
     <button class="tb" id="tbTorch" aria-label="손전등" style="display:none">🔦</button>
     <button class="tb" id="tbExp" aria-label="밝기" style="display:none">☀︎</button>
   </div>
@@ -1095,6 +1099,8 @@ async function finishRec(mime){
     return;
   }
   // 단독 모드
+  if(S.autoDiscard){S.autoDiscard=false;S.autoRec=false;toast('스윙이 감지되지 않아 저장하지 않았어요',2200);return;}
+  S.autoRec=false;
   addSwing({blob,url:URL.createObjectURL(blob),mime,dur,fps:S.recFps||S.fps});
 }
 
@@ -1511,7 +1517,7 @@ $('#bRecAgain').onclick=async()=>{
   }else{
     setPlaying(false);S.role='solo';show('cam');camUI();
     const ok=await openCamera();
-    if(ok){$('#durSel').value=String(dur/1000);startRec(dur);}
+    if(ok){$('#durSel').value=String(dur/1000);if(window.autoIsOn&&autoIsOn()){autoResume();}else startRec(dur);}
   }
 };
 $('#bCam').onclick=()=>{$('#viewRow').style.display='none';$('#joinRow').style.display='flex';$('#codeIn').focus();};
@@ -2044,6 +2050,87 @@ $('#bFlip').onclick=async()=>{S.facing=S.facing==='environment'?'user':'environm
 $('#fpsSel').onchange=()=>openCamera();
 $('#resSel').onchange=()=>openCamera();
 $('#bRec').onclick=onRecBtn;
+/* ---------- 자동 촬영 (폰 1대): 어드레스 감지 → 녹화 → 스윙 끝나면 정지 ---------- */
+(function(){
+  let on=false;try{on=localStorage.getItem('swinglab_auto')==='1';}catch(e){}
+  const st=$('#autoSt'),btn=$('#tbAuto');
+  let phase='wait',stillN=0,prev=null,swingSeen=false,stillSince=0,recT0=0,cool=0,busy=false,loopH=null,noPersonN=0;
+  const PTS=[11,12,15,16,23,24];
+  function say(t,go){if(!t){st.style.display='none';return;}st.textContent=t;st.className='pill'+(go?' go':'');st.style.display='block';}
+  function reset(){phase='wait';stillN=0;prev=null;swingSeen=false;stillSince=0;}
+  function analyze(p){
+    const need=[0,11,12,15,16,23,24,27,28];
+    for(const i of need){const q=p[i];if(!q||(q.visibility!=null&&q.visibility<0.4)||q.x<-0.02||q.x>1.02||q.y<-0.02||q.y>1.02)return null;}
+    const ay=(p[27].y+p[28].y)/2,h=ay-p[0].y;if(h<0.35)return {far:true};
+    let mv=0,mvW=0,dt=0;
+    if(prev){dt=(performance.now()-prev.t)/1000;if(dt>0){let sum=0,sw=0;for(const i of PTS){const d=Math.hypot(p[i].x-prev.p[i].x,p[i].y-prev.p[i].y);sum+=d;if(i===15||i===16)sw+=d;}mv=Math.max(sum/PTS.length/h/dt,sw/2/h/dt*0.5);mvW=sw/2/h/dt;}}
+    prev={p:p.map(q=>({x:q.x,y:q.y})),t:performance.now()};
+    const sy=(p[11].y+p[12].y)/2;
+    const addr=p[15].y>sy+0.1*h&&p[16].y>sy+0.1*h&&Math.hypot(p[15].x-p[16].x,p[15].y-p[16].y)<0.32*h;
+    return {mv,mvW,addr,h};
+  }
+  async function loop(){
+    clearTimeout(loopH);
+    if(!on){return;}
+    const active=$('#cam').classList.contains('active')&&S.role==='solo'&&S.stream&&!document.hidden&&S.mode!=='photo';
+    const manual=S.recording&&phase!=='rec';
+    if(!active||manual||performance.now()<cool||busy){loopH=setTimeout(loop,250);return;}
+    busy=true;
+    let r=null;
+    try{const lmk=await getLM();const v=$('#preview');if(v.videoWidth)r=lmk.detect(v);}catch(e){}
+    busy=false;
+    const p=r&&r.landmarks&&r.landmarks[0];const a=p?analyze(p):null;
+    if(phase==='wait'){
+      if(!p||!a){noPersonN++;prev=null;stillN=0;if(noPersonN>3)say('🏌️ 자동 촬영 대기 · 전신이 화면에 들어오게 서주세요');}
+      else if(a.far){say('🏌️ 조금 더 가까이 서주세요 (전신이 크게)');stillN=0;}
+      else{
+        noPersonN=0;
+        if(a.addr&&a.mv<0.35){stillN++;say('⛳ 어드레스 인식 중…',true);}
+        else{stillN=0;say('🏌️ 자동 촬영 대기 · 어드레스 자세로 서 주세요');}
+        if(stillN>=5){   // 약 1초 이상 정지한 어드레스
+          phase='rec';swingSeen=false;stillSince=0;recT0=performance.now();S.autoRec=true;S.autoDiscard=false;
+          say('● 촬영 중 · 스윙하세요',true);beep(1200,.15);
+          S.recording=true;doStart(14000);
+        }
+      }
+      loopH=setTimeout(loop,150);return;
+    }
+    if(phase==='rec'){
+      if(!S.recording){reset();loopH=setTimeout(loop,200);return;}   // 수동으로 끝난 경우
+      const t=(performance.now()-recT0)/1000;
+      if(a&&!a.far){
+        if(a.mvW>1.5||a.mv>0.7)swingSeen=true;
+        if(swingSeen){
+          if(a.mv<0.35){if(!stillSince)stillSince=performance.now();if(performance.now()-stillSince>1300){say('저장 중…');S.autoRec=false;stopRec();phase='wait';cool=performance.now()+3000;reset();loopH=setTimeout(loop,300);return;}}
+          else stillSince=0;
+        }
+      }
+      if(!swingSeen&&t>10){S.autoDiscard=true;S.autoRec=false;say('스윙이 없어 취소했어요');stopRec();cool=performance.now()+2500;reset();}
+      else if(t>13.5){S.autoRec=false;stopRec();cool=performance.now()+3000;reset();}
+      loopH=setTimeout(loop,200);return;
+    }
+    loopH=setTimeout(loop,200);
+  }
+  function paint(){
+    btn.classList.toggle('on',on);
+    btn.style.display=S.role==='solo'?'':'none';
+    if(!on)say('');
+  }
+  async function toggle(){
+    if(on){on=false;try{localStorage.setItem('swinglab_auto','0');}catch(e){}paint();toast('자동 촬영 꺼짐',1200);return;}
+    on=true;try{localStorage.setItem('swinglab_auto','1');}catch(e){}
+    paint();say('AI 자세 모델 불러오는 중…');
+    try{await getLM();}catch(e){on=false;try{localStorage.setItem('swinglab_auto','0');}catch(e2){}paint();toast('모델을 불러오지 못해서 자동 촬영을 켤 수 없어요 (인터넷 필요)',3500);return;}
+    reset();toast('자동 촬영 켜짐 · 어드레스 자세로 서면 시작해요',2600);loop();
+  }
+  btn.onclick=toggle;
+  window.autoResume=()=>{if(on){reset();cool=performance.now()+1500;clearTimeout(loopH);loop();}};
+  window.autoIsOn=()=>on;
+  window.autoPaint=paint;
+  setInterval(()=>{paint();if(on&&!loopH)loop();},1000);
+  if(on)loop();
+})();
+
 loadSaved();
 </script>
 </body>
