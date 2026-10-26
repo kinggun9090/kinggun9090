@@ -369,7 +369,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v45</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v46</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -675,7 +675,7 @@ async function openCamera(){
   if(!S.stream){$('#pillFps').textContent='카메라 꺼짐';camFail(err);return false;}
   const track=S.stream.getVideoTracks()[0];
   // 2) 켜진 뒤에 해상도/fps 상향 시도 (실패해도 무시)
-  const rh=+$('#resSel').value||1080,rw=Math.round(rh*((S.facing==='user'&&S.wideFront)?4/3:16/9));
+  const rh=+$('#resSel').value||1080,rw=Math.round(rh*16/9);
   try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh},frameRate:{ideal:fps}});}catch(e){try{await track.applyConstraints({width:{ideal:rw},height:{ideal:rh}});}catch(e2){}}
   const v=$('#preview');v.muted=true;v.playsInline=true;v.setAttribute('playsinline','');v.srcObject=S.stream;
   try{await v.play();}catch(e){}
@@ -1607,7 +1607,7 @@ function initCamTools(){
   $('#tbExp').style.display=S.expCap?'':'none';$('#expWrap').style.display='none';
   if(S.expCap){const r=$('#expRange');r.min=S.expCap.min;r.max=S.expCap.max;r.step=S.expCap.step||0.1;r.value=0;}
   const front=S.facing==='user';
-  document.querySelectorAll('#zoomRow .chip').forEach(b=>{const z=+b.dataset.z;b.style.display=(front&&z<1)?'':((S.hwZoom&&(z<S.zoomMin-0.01||z>S.zoomMax+0.01))?'none':'');});
+  document.querySelectorAll('#zoomRow .chip').forEach(b=>{const z=+b.dataset.z;b.style.display=(front&&z<1)||(S.hwZoom&&(z<S.zoomMin-0.01||z>S.zoomMax+0.01))?'none':'';});
   S.swScale=1;$('#preview').style.transform='';
   S.zoom=(S.lens==='ultra'&&!S.hwZoom)?0.5:1;S.zCur=S.zTarget=S.zoom;S.zAnim=false;S.zHW=false;S.zPend=null;
   paintZoom(S.zoom);
@@ -1617,12 +1617,6 @@ function paintZoom(z,sel){
   let best=null,bd=9;
   document.querySelectorAll((sel||'#zoomRow')+' .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z+'x';if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
   if(best){best.classList.add('on');best.textContent=(bd<0.05)?best.dataset.z+'x':z.toFixed(1)+'x';}
-  if(!sel&&S.facing==='user'){   // 셀카: 0.5 칸을 '광각'(최대 축소)으로 표시
-    const w=document.querySelector('#zoomRow .chip[data-z="0.5"]');
-    if(w){const on=S.hwZoom?z<0.99:!!S.wideFront;w.textContent='광각';
-      if(on){document.querySelectorAll('#zoomRow .chip').forEach(b=>b.classList.remove('on'));w.classList.add('on');}else w.classList.remove('on');
-      if(!on&&!document.querySelector('#zoomRow .chip.on')){const o=document.querySelector('#zoomRow .chip[data-z="1"]');if(o)o.classList.add('on');}}
-  }
 }
 function sendZoom(){if(S.role==='cam'&&connected()){try{S.conn.send({type:'zoom',z:S.swScale||1,label:S.zoom});}catch(e){}}}
 async function switchLens(kind){
@@ -1664,13 +1658,7 @@ async function setZoom(z){
 }
 document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=async()=>{
   if(S.justDragged||S.recording)return;
-  const z=+b.dataset.z,front=S.facing==='user';
-  if(front&&z<1){
-    if(S.hwZoom&&S.zoomMinRaw<0.999){setZoom(S.zoomMinRaw);toast('셀카 광각 '+Math.max(S.zoomMinRaw,0.5).toFixed(1)+'x',1200);}
-    else{S.wideFront=!S.wideFront;await openCamera();toast(S.wideFront?'셀카 광각 (최대로 넓게)':'셀카 기본',1300);}
-    return;
-  }
-  if(front&&S.wideFront&&!S.hwZoom){S.wideFront=false;await openCamera();}
+  const z=+b.dataset.z;
   setZoom(z);
 });
 // 줌 드래그 (줌 바를 좌우로 밀기)
