@@ -372,7 +372,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v48</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v49</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -647,7 +647,8 @@ setInterval(()=>{if(connected()){try{S.conn.send({type:'hb'});}catch(e){}}},2000
 ['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(!(wl&&!wl.released))keepAwake();},{passive:true}));
 keepAwake();
 
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));if(id==='cam'||id==='live'){[0,60,250,700].forEach(t=>setTimeout(()=>{try{forceFull();applyFit();const pv=$('#preview');if(id==='cam'&&pv.srcObject&&pv.paused)pv.play().catch(()=>{});}catch(e){}},t));}}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));if(id!=='cam'&&id!=='live'){try{afLockUI(false);$('#fring').className='';}catch(e){}}
+  if(id==='cam'||id==='live'){try{forceFull();applyFit();if(id==='cam'&&!S.stream)$('#preview').style.visibility='hidden';}catch(e){}}if(id==='cam'||id==='live'){[0,60,250,700].forEach(t=>setTimeout(()=>{try{forceFull();applyFit();const pv=$('#preview');if(id==='cam'&&pv.srcObject&&pv.paused)pv.play().catch(()=>{});}catch(e){}},t));}}
 function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',ms);}
 function beep(f=880,d=.12){try{const ac=beep.ac||(beep.ac=new(window.AudioContext||window.webkitAudioContext)());if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.25;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
 function recBitrate(){
@@ -688,7 +689,7 @@ async function openCamera(){
   try{await v.play();}catch(e){}
   const ok=await waitVideo(v);
   if(!ok){closeCamera();$('#pillFps').textContent='영상 없음';camFail({name:'NoVideo'});return false;}
-  hideMsg();
+  hideMsg();v.style.visibility='';
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
   await findLenses();applyFocusMode();initCamTools();
@@ -709,6 +710,7 @@ function camFail(err){
   showMsg(t);$('#camRetry').style.display='block';
 }
 function closeCamera(){
+  try{$('#preview').style.visibility='hidden';}catch(e){}
   if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null;}
   try{if(S.wake){S.wake.release();S.wake=null;}}catch(e){}
 }
