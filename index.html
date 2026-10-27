@@ -366,13 +366,15 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 #autoSt{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 136px);transform:translateX(-50%);z-index:6;max-width:86vw;text-align:center;white-space:normal;background:rgba(0,0,0,.6)!important;pointer-events:none;line-height:1.35;padding:6px 12px!important}
 #autoSt.go,#lvAutoSt.go{color:#ffd54a}
 #lvAutoSt{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 136px);transform:translateX(-50%);z-index:6;max-width:86vw;text-align:center;white-space:normal;background:rgba(0,0,0,.6)!important;pointer-events:none;line-height:1.35;padding:6px 12px!important}
+#fitBtn,#lvFit{display:none!important}
+.fitContain{object-fit:cover!important}
 </style>
 </head>
 <body>
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v49</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v50</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1553,7 +1555,7 @@ $('#bBack').onclick=()=>{
   if(S.photoQ&&S.photoQ.length)savePhotos();else toast('저장할 새 영상이 없어요');
 };
 function tryFullscreen(){try{const e=document.documentElement;if(!document.fullscreenElement&&e.requestFullscreen)e.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(x){}}
-let fitContain=false;try{fitContain=localStorage.getItem('swinglab_fit')==='contain';}catch(e){}
+let fitContain=false;try{localStorage.removeItem('swinglab_fit');}catch(e){}   // 항상 꽉 채우기
 function forceFull(){
   ['preview','liveVideo'].forEach(id=>{const v=$('#'+id);if(!v||!v.parentElement)return;
     const p=v.parentElement,w=p.clientWidth||window.innerWidth,h=p.clientHeight||window.innerHeight;
@@ -1566,7 +1568,7 @@ function applyFit(){
   ['preview','liveVideo','fxCv','lvFxCv'].forEach(id=>{const e=$('#'+id);if(e)e.classList.toggle('fitContain',fitContain);});
   const t=fitContain?'▢ 전체 보기':'▣ 꽉 채우기';$('#fitBtn').textContent=t;$('#lvFit').textContent=t;
 }
-function toggleFit(){fitContain=!fitContain;try{localStorage.setItem('swinglab_fit',fitContain?'contain':'cover');}catch(e){}applyFit();}
+function toggleFit(){fitContain=false;applyFit();}
 
 
 /* 소리 (녹음된 음성 재생) */
