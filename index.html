@@ -375,7 +375,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v51</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v52</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1023,7 +1023,8 @@ function onData(d){
   if(d.type==='hb')return;
   if(d.type==='rec'){if(S.role==='cam'&&!S.recording){$('#durSel').value=String(d.dur/1000);startRec(d.dur);}}
   else if(d.type==='stop'){if(S.role==='cam')stopRec();}
-  else if(d.type==='auto'){if(S.role==='cam'&&window.autoSet)autoSet(!!d.on,true);}
+  else if(d.type==='auto'){if(S.role==='cam'&&window.autoSet){if(d.dur)$('#durSel').value=String(d.dur/1000);autoSet(!!d.on,true);}}
+  else if(d.type==='autodur'){if(S.role==='cam'&&d.dur&&!S.recording)$('#durSel').value=String(d.dur/1000);}
   else if(d.type==='bscr'){S.bScr=d.s;}
   else if(d.type==='autost'){if(S.role==='view'){S.autoOn=!!d.on;const e=$('#lvAutoSt');if(d.on&&d.t){e.textContent=d.t;e.className='pill'+(d.go?' go':'');e.style.display='block';}else e.style.display='none';$('#lvTbAuto').classList.toggle('on',!!d.on);}}
   else if(d.type==='autosnd'){if(S.role==='view')chime(d.k);}
@@ -2057,7 +2058,8 @@ $('#lvRec').onclick=()=>{
 $('#lvFlip').onclick=()=>{if(connected())S.conn.send({type:'flip'});else toast('촬영폰이 연결되어 있지 않아요');};
 $('#lvFps').onchange=()=>{if(connected())S.conn.send({type:'cfg',fps:+$('#lvFps').value});};
 $('#lvRes').onchange=()=>{if(connected())S.conn.send({type:'cfg',res:+$('#lvRes').value});};
-$('#lvTbAuto').onclick=()=>{if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}S.conn.send({type:'auto',on:!S.autoOn});};
+$('#lvTbAuto').onclick=()=>{if(!connected()){toast('촬영폰이 연결되어 있지 않아요');return;}S.conn.send({type:'auto',on:!S.autoOn,dur:+$('#lvDur').value*1000});};
+$('#lvDur').addEventListener('change',()=>{if(connected()&&S.autoOn)S.conn.send({type:'autodur',dur:+$('#lvDur').value*1000});});
 $('#lvHist').onclick=()=>{setMonitorMode(false);show('monitor');monUI();renderHist();};
 $('#lvExit').onclick=leaveAll;
 $('#bGoLive').onclick=()=>goLive();
@@ -2161,24 +2163,22 @@ function chime(kind){
           phase='rec';swingSeen=false;stillSince=0;S.autoRec=true;S.autoDiscard=false;
           say('● 준비 완료 · 스윙하세요',true);pushState();snd('ready');
           S.recording=true;recT0=performance.now()+500;
-          setTimeout(()=>{if(S.recording&&phase==='rec')doStart(14000);},500);   // 알림음이 녹음에 섞이지 않도록 살짝 뒤에 시작
+          S.autoDur=(+$('#durSel').value||8)*1000;S.autoChime=true;
+          setTimeout(()=>{if(S.recording&&phase==='rec')doStart(S.autoDur);},500);   // 알림음이 녹음에 섞이지 않도록 살짝 뒤에 시작
         }
       }
       pushState();loopH=setTimeout(loop,120);return;
     }
     if(phase==='rec'){
-      if(!S.recording){reset();loopH=setTimeout(loop,200);return;}
-      const t=(performance.now()-recT0)/1000;
-      if(S.rec&&a&&!a.far){
-        if(a.mvW>1.5||a.mv>0.7)swingSeen=true;
-        if(swingSeen){
-          if(a.mv<0.45){if(!stillSince)stillSince=performance.now();
-            if(performance.now()-stillSince>1300){say('✅ 촬영 완료',true);S.autoRec=false;S.autoChime=true;stopRec();cool=performance.now()+3500;reset();pushState();loopH=setTimeout(loop,300);return;}}
-          else stillSince=0;
-        }
+      if(!S.recording){   // 설정한 시간이 끝나서 녹화가 자동으로 멈춤
+        if(!S.autoDiscard){say('✅ 촬영 완료',true);}
+        cool=performance.now()+3500;reset();pushState();loopH=setTimeout(loop,300);return;
       }
-      if(S.rec&&!swingSeen&&t>10){S.autoDiscard=true;S.autoRec=false;say('스윙이 없어 취소했어요');snd('cancel');stopRec();cool=performance.now()+2500;reset();}
-      else if(S.rec&&t>13.5){S.autoRec=false;S.autoChime=true;stopRec();cool=performance.now()+3500;reset();}
+      const t=Math.max(0,(performance.now()-recT0)/1000),dur=(S.autoDur||8000)/1000;
+      if(S.rec&&a&&!a.far&&(a.mvW>1.5||a.mv>0.7))swingSeen=true;
+      // 설정 시간의 85%가 지나도록 스윙이 없으면 취소 (연습 서 있기 등)
+      if(S.rec&&!swingSeen&&t>dur*0.85){S.autoDiscard=true;S.autoRec=false;S.autoChime=false;say('스윙이 없어 취소했어요');snd('cancel');stopRec();cool=performance.now()+2500;reset();}
+      else if(S.rec){const left=Math.max(0,Math.ceil(dur-t));say('● 촬영 중 · '+left+'초 남음',true);}
       pushState();loopH=setTimeout(loop,150);return;
     }
     loopH=setTimeout(loop,200);
