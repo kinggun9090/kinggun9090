@@ -375,25 +375,25 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v52</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v53</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
   <div class="tips" id="envWarn" style="display:none;border-color:var(--warn);color:var(--txt);margin-top:0">⚠️ <b>이 화면에서는 카메라와 폰 간 연결이 막혀 있어요.</b><br>앱 안의 미리보기가 아니라, <b>Safari/Chrome 주소창에서 이 페이지 주소를 직접 열어야</b> 동작해요. (HTTPS 주소로 호스팅 필요)</div>
   <div class="col">
-    <button class="btn" id="bView">📺 B폰 · 확인 화면 연결<small>촬영폰(A)의 비밀번호를 입력하면 실시간 화면으로 바뀌어요</small></button>
+    <button class="btn" id="bView">1. 📺 Verification camera<small>촬영폰(A)의 비밀번호를 입력하면 실시간 화면으로 바뀌어요</small></button>
     <div class="row" id="viewRow" style="display:none">
       <input type="tel" id="pinSet" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="촬영폰 비밀번호 4자리" style="flex:1">
       <button class="chip on" id="bViewGo" style="padding:13px 20px">연결</button>
     </div>
-    <button class="btn" id="bCam">📷 A폰 · 촬영폰으로 연결<small>비밀번호 4자리를 정하고 카메라를 켠 채로 대기</small></button>
+    <button class="btn" id="bCam">2. 📷 Shooting camera<small>비밀번호 4자리를 정하고 카메라를 켠 채로 대기</small></button>
     <div class="row" id="joinRow" style="display:none">
       <input type="tel" id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="비밀번호 4자리 설정" style="flex:1">
       <button class="chip on" id="bJoinGo" style="padding:13px 20px">시작</button>
     </div>
-    <button class="btn" id="bSolo">🎥 폰 1대로 촬영 + 확인<small>찍고 바로 이 폰에서 분석</small></button>
-    <button class="btn" id="bImport">📂 저장된 영상 불러와 분석·비교<small>프로 스윙 vs 내 스윙 비교에도 사용</small></button>
-    <button class="btn" id="bSaved">🗂 저장된 스윙 보기<small id="savedCount">촬영한 스윙은 자동으로 이 폰에 저장돼요</small></button>
+    <button class="btn" id="bSolo">3. 🎥 Shooting/Review Camera<small>찍고 바로 이 폰에서 분석</small></button>
+    <button class="btn" id="bImport">4. 📂 저장된 영상 불러와 분석·비교<small>프로 스윙 vs 내 스윙 비교에도 사용</small></button>
+    <button class="btn" id="bSaved">5. 🗂 저장된 스윙 보기<small id="savedCount">촬영한 스윙은 자동으로 이 폰에 저장돼요</small></button>
   </div>
   <div class="tips">
     <b>사용 순서</b><br>
