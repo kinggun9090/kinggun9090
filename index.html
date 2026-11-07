@@ -374,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v57</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v58</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -700,6 +700,9 @@ async function _openCamera(){
   const ok=await waitVideo(v);
   if(!ok){closeCamera();$('#pillFps').textContent='영상 없음';camFail({name:'NoVideo'});return false;}
   hideMsg();v.style.visibility='';
+  {const vw=v.videoWidth,vh=v.videoHeight,ar=Math.max(vw,vh)/Math.max(1,Math.min(vw,vh));
+   S.wideK=(S.facing==='user'&&S.wideFront&&!S.hwZoom&&Math.abs(ar-4/3)>0.06)?0.78:1;
+   if(S.facing==='user'&&S.wideFront&&!S.hwZoom)setTimeout(()=>toast(S.wideK<1?'이 폰은 셀카 광각(4:3)을 지원하지 않아 화면을 축소해서 보여줘요':'셀카 광각 · 4:3 전체 화면 ('+vw+'×'+vh+')',2600),300);}
   const st=track.getSettings();
   S.fps=Math.round(st.frameRate||30);
   await findLenses();applyFocusMode();initCamTools();
@@ -1656,13 +1659,15 @@ function initCamTools(){
   paintZoom(S.zoom);
   sendZoom();
 }
+const WIDE_OUT='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;pointer-events:none"><path d="M9 3H3v6M3 3l6 6M15 3h6v6M21 3l-6 6M9 21H3v-6M3 21l6-6M15 21h6v-6M21 21l-6-6"/></svg>';
+const WIDE_IN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;pointer-events:none"><path d="M9 3v6H3M9 9L3 3M15 3v6h6M15 9l6-6M9 21v-6H3M9 15l-6 6M15 21v-6h6M15 15l6 6"/></svg>';
 function paintZoom(z,sel){
   let best=null,bd=9;
   document.querySelectorAll((sel||'#zoomRow')+' .chip').forEach(b=>{const d=Math.abs(+b.dataset.z-z);b.classList.remove('on');b.textContent=b.dataset.z+'x';if(b.style.display!=='none'&&d<bd){bd=d;best=b;}});
   if(best){best.classList.add('on');best.textContent=(bd<0.05)?best.dataset.z+'x':z.toFixed(1)+'x';}
   if(!sel&&S.facing==='user'){   // 셀카: 0.5 칸을 기본 카메라의 '광각'(넓게 보기)으로 표시
     const w=document.querySelector('#zoomRow .chip[data-z="0.5"]');
-    if(w){const on=S.hwZoom?z<0.99:!!S.wideFront;w.textContent='광각';
+    if(w){const on=S.hwZoom?z<0.99:!!S.wideFront;w.innerHTML=on?WIDE_IN:WIDE_OUT;w.setAttribute('aria-label','셀카 광각(축소)');
       if(on){document.querySelectorAll('#zoomRow .chip').forEach(b=>b.classList.remove('on'));w.classList.add('on');}else w.classList.remove('on');
       if(!on&&!document.querySelector('#zoomRow .chip.on')){const o=document.querySelector('#zoomRow .chip[data-z="1"]');if(o)o.classList.add('on');}}
   }
@@ -2013,10 +2018,11 @@ function makeRecStream(){
   const cine=S.mode==='cine',z=S.swScale>1.001?S.swScale:1;
   S.recFps=cine?24:null;
   if(S.fxActive){const out=$('#fxCv').captureStream(24);S.stream.getAudioTracks().forEach(a=>out.addTrack(a));S.recCleanup=null;return out;}
-  if(z===1)return S.stream;
+  const wk=(S.facing==='user'&&S.wideFront&&!S.hwZoom&&S.wideK<1)?S.wideK:1;
+  if(z===1&&wk===1)return S.stream;
   const v=$('#preview'),W=v.videoWidth,H=v.videoHeight;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');let run=true;
-  (function d(){if(!run)return;const sw=W/z,sh=H/z;try{cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);if(cine)cineGrade(cx,W,H);}catch(e){}requestAnimationFrame(d);})();
+  (function d(){if(!run)return;const sw=W/z,sh=H/z;try{if(wk<1){cx.fillStyle='#000';cx.fillRect(0,0,W,H);cx.drawImage(v,0,0,W,H,W*(1-wk)/2,H*(1-wk)/2,W*wk,H*wk);}else cx.drawImage(v,(W-sw)/2,(H-sh)/2,sw,sh,0,0,W,H);if(cine)cineGrade(cx,W,H);}catch(e){}requestAnimationFrame(d);})();
   const out=cv.captureStream(cine?24:(S.fps||30));S.stream.getAudioTracks().forEach(a=>out.addTrack(a));
   S.recCleanup=()=>{run=false;};return out;
 }
@@ -2260,7 +2266,7 @@ function chime(kind){
     const wide=S.facing==='user'&&S.wideFront&&!S.hwZoom;   // 셀카 광각: 찍히는 전체 화면을 줄여서(축소) 보여줌
     pv.style.objectFit=wide?'contain':'';
     try{
-      if(wide){const sc=Math.min(W/vw,H/vh);cx.fillStyle='#000';cx.fillRect(0,0,W,H);cx.drawImage(pv,0,0,vw,vh,(W-vw*sc)/2,(H-vh*sc)/2,vw*sc,vh*sc);}
+      if(wide){const sc=Math.min(W/vw,H/vh)*(S.wideK||1);cx.fillStyle='#000';cx.fillRect(0,0,W,H);cx.drawImage(pv,0,0,vw,vh,(W-vw*sc)/2,(H-vh*sc)/2,vw*sc,vh*sc);}
       else{const sc=Math.max(W/vw,H/vh),sw=W/sc,sh=H/sc;cx.drawImage(pv,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,W,H);}
     }catch(e){return;}
     cv.style.transform=pv.style.transform||'';
