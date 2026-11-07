@@ -367,7 +367,6 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 #autoSt.go,#lvAutoSt.go{color:#ffd54a}
 #lvAutoSt{position:fixed!important;left:50%;top:calc(env(safe-area-inset-top) + 136px);transform:translateX(-50%);z-index:6;max-width:86vw;text-align:center;white-space:normal;background:rgba(0,0,0,.6)!important;pointer-events:none;line-height:1.35;padding:6px 12px!important}
 #fitBtn,#lvFit{display:none!important}
-.fitContain{object-fit:cover!important}
 #pvCv{position:absolute!important;left:0;top:0;width:100%!important;height:100%!important;display:none;background:#000;pointer-events:none}
 </style>
 </head>
@@ -375,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v56</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v57</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -2257,8 +2256,13 @@ function chime(kind){
     const cw=cv.parentElement.clientWidth||innerWidth,ch=cv.parentElement.clientHeight||innerHeight;
     const W=Math.min(1440,Math.round(cw*dpr)),H=Math.round(W*ch/cw);
     if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
-    const vw=pv.videoWidth,vh=pv.videoHeight,sc=Math.max(W/vw,H/vh),sw=W/sc,sh=H/sc;
-    try{cx.drawImage(pv,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,W,H);}catch(e){return;}
+    const vw=pv.videoWidth,vh=pv.videoHeight;
+    const wide=S.facing==='user'&&S.wideFront&&!S.hwZoom;   // 셀카 광각: 찍히는 전체 화면을 줄여서(축소) 보여줌
+    pv.style.objectFit=wide?'contain':'';
+    try{
+      if(wide){const sc=Math.min(W/vw,H/vh);cx.fillStyle='#000';cx.fillRect(0,0,W,H);cx.drawImage(pv,0,0,vw,vh,(W-vw*sc)/2,(H-vh*sc)/2,vw*sc,vh*sc);}
+      else{const sc=Math.max(W/vw,H/vh),sw=W/sc,sh=H/sc;cx.drawImage(pv,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,W,H);}
+    }catch(e){return;}
     cv.style.transform=pv.style.transform||'';
     if(cv.style.display!=='block')cv.style.display='block';
     last=performance.now();
