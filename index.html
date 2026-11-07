@@ -375,7 +375,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v63</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v64</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -2194,7 +2194,7 @@ function chime(kind){
   let on=false;try{on=localStorage.getItem('swinglab_auto')==='1';}catch(e){}
   const st=$('#autoSt'),btn=$('#tbAuto');
   let sens=3;try{const v=localStorage.getItem('swinglab_sens');if(v!=null)sens=+v;}catch(e){}
-  const SENS=[{n:4,m:1.0,any:12},{n:3,m:1.6,any:9},{n:2,m:2.6,any:6},{n:1,m:4.5,any:4}];
+  const SENS=[{n:4,m:1.0,any:12,v:0.2},{n:3,m:1.8,any:9,v:0.12},{n:2,m:3.2,any:6,v:0.06},{n:1,m:9,any:3,v:0.02}];
   let phase='wait',stillAny=0,stillN=0,prev=null,swingSeen=false,stillSince=0,recT0=0,cool=0,busy=false,loopH=null,noPersonN=0,cur={t:'',go:false};
   const PTS=[11,12,15,16,23,24];
   function say(t,go){cur={t:t||'',go:!!go};if(!t){st.style.display='none';return;}st.textContent=t;st.className='pill'+(go?' go':'');st.style.display='block';}
@@ -2202,7 +2202,7 @@ function chime(kind){
   const okP=(q,vis)=>q&&(q.visibility==null||q.visibility>=vis);
   let sm=null,mvH=[];
   function analyze(p){
-    const vis=(i,t=0.1)=>okP(p[i],t);
+    const vis=(i,t)=>okP(p[i],t==null?(SENS[sens]||SENS[3]).v:t);
     for(const i of [11,12,23,24]){if(!vis(i))return null;}          // 어깨·엉덩이만 보이면 인식 (손목·코는 가려져도 허용)
     const hipY=(p[23].y+p[24].y)/2,sy=(p[11].y+p[12].y)/2;
     const noseY=vis(0)?p[0].y:sy-0.45*(hipY-sy);
@@ -2272,9 +2272,10 @@ function chime(kind){
         noPersonN=0;
         const SV=SENS[sens]||SENS[3];
         if(a.mv<SV.m*0.9*a.tf)stillAny++;else stillAny=0;
-        if(a.addr&&a.mv<SV.m*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,SV.n)+'/'+SV.n,true);}
+        const dbg=' · 움직임 '+a.mv.toFixed(2)+'/'+(SV.m*a.tf).toFixed(1);
+        if(a.addr&&a.mv<SV.m*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,SV.n)+'/'+SV.n+dbg,true);}
         else if(a.addr&&stillN>0&&a.mv<SV.m*1.6*a.tf){/* 잠깐의 흔들림은 무시 */}
-        else{stillN=0;say(a.addr?'🏌️ 자동 대기 · 움직임이 있어요 (정지해 주세요)':'🏌️ 자동 대기 · 어드레스 자세로 서 주세요');}
+        else{stillN=0;say((a.addr?'🏌️ 자동 대기 · 움직임이 있어요 (정지해 주세요)':'🏌️ 자동 대기 · 어드레스 자세로 서 주세요')+dbg);}
         if(stillN>=SV.n||stillAny>=SV.any){
           phase='rec';swingSeen=false;stillSince=0;S.autoRec=true;S.autoDiscard=false;
           say('● 준비 완료 · 스윙하세요',true);pushState();snd('ready');
