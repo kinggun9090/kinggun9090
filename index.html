@@ -374,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v58</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v59</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1354,7 +1354,8 @@ async function getLM(){
   const base='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
   const vision=await import(base+'/vision_bundle.mjs');
   const fs=await vision.FilesetResolver.forVisionTasks(base+'/wasm');
-  const model='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
+  const fast=/Android/i.test(navigator.userAgent);   // 갤럭시 등 안드로이드는 가벼운 모델로 속도 우선
+  const model='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_'+(fast?'lite':'full')+'/float16/1/pose_landmarker_'+(fast?'lite':'full')+'.task';
   for(const delegate of['GPU','CPU']){
     try{lm=await vision.PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:model,delegate},runningMode:'IMAGE',numPoses:1});break;}catch(e){console.warn(delegate,e);}
   }
@@ -1364,12 +1365,47 @@ async function getLM(){
 function seekTo(v,t){return new Promise(res=>{let done=false;const f=()=>{if(done)return;done=true;v.removeEventListener('seeked',f);res();};v.addEventListener('seeked',f);v.currentTime=t;setTimeout(f,700);});}
 async function analyzeSlot(s,prog){
   const lmk=await getLM();const v=s.video;v.pause();
-  const step=1/30,frames=[];
-  for(let t=0;t<s.dur;t+=step){
-    await seekTo(v,t);
-    const r=lmk.detect(v);
-    if(r.landmarks&&r.landmarks[0]&&r.worldLandmarks&&r.worldLandmarks[0])frames.push({t:v.currentTime,p:r.landmarks[0],w:r.worldLandmarks[0]});
-    prog(t/s.dur);
+  const frames=[];
+  if(v.requestVideoFrameCallback){
+    // 빠른 방식: 영상을 재생하면서 프레임마다 분석 (탐색(seek)을 반복하지 않아 안드로이드에서도 빠름)
+    const cv=document.createElement('canvas'),cx=cv.getContext('2d');
+    const vw=v.videoWidth,vh=v.videoHeight,sc=Math.min(1,640/Math.max(vw,vh));cv.width=Math.max(2,Math.round(vw*sc));cv.height=Math.max(2,Math.round(vh*sc));
+    await seekTo(v,0);v.muted=true;v.playbackRate=1;
+    await new Promise(resolve=>{
+      let done=false,lastT=-1,ema=0,lastRate=1,n=0;
+      const finish=()=>{if(done)return;done=true;try{v.pause();}catch(e){}v.onended=null;resolve();};
+      v.onended=finish;
+      const cb=(now,meta)=>{
+        if(done)return;
+        const t=meta.mediaTime;
+        if(t-lastT>=1/30-0.004){
+          lastT=t;
+          try{
+            cx.drawImage(v,0,0,cv.width,cv.height);
+            const t0=performance.now();const r=lmk.detect(cv);const d=performance.now()-t0;
+            ema=ema?ema*0.8+d*0.2:d;
+            if(r.landmarks&&r.landmarks[0]&&r.worldLandmarks&&r.worldLandmarks[0])frames.push({t,p:r.landmarks[0],w:r.worldLandmarks[0]});
+            // 분석이 느린 폰은 재생 속도를 낮춰서 프레임을 놓치지 않게 (초당 약 24프레임 확보)
+            if(++n%4===0){const rate=Math.max(0.1,Math.min(1,1000/(24*Math.max(ema,1))));if(Math.abs(rate-lastRate)/lastRate>0.1){lastRate=rate;try{v.playbackRate=rate;}catch(e){}}}
+          }catch(e){}
+          prog(Math.min(1,t/s.dur));
+        }
+        if(t>=s.dur-0.04){finish();return;}
+        v.requestVideoFrameCallback(cb);
+      };
+      v.requestVideoFrameCallback(cb);
+      v.play().catch(finish);
+      setTimeout(finish,(s.dur*6+20)*1000);   // 안전장치
+    });
+    v.playbackRate=1;try{v.currentTime=0;}catch(e){}
+  }else{
+    const step=1/30;
+    for(let t=0;t<s.dur;t+=step){
+      await seekTo(v,t);
+      const r=lmk.detect(v);
+      if(r.landmarks&&r.landmarks[0]&&r.worldLandmarks&&r.worldLandmarks[0])frames.push({t:v.currentTime,p:r.landmarks[0],w:r.worldLandmarks[0]});
+      prog(t/s.dur);
+    }
   }
   s.frames=frames;
   return compute(frames,$('#lefty').checked);
