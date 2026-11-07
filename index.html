@@ -374,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v60</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v61</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -2185,7 +2185,7 @@ function chime(kind){
   let sm=null,mvH=[];
   function analyze(p){
     // 필요한 부위: 코·어깨·손목·엉덩이 (발목은 화면 밖이어도 허용)
-    for(const i of [0,11,12,15,16,23,24]){if(!okP(p[i],0.15))return null;}
+    for(const i of [0,11,12,15,16,23,24]){if(!okP(p[i],0.1))return null;}
     if(sm){p=p.map((q,i)=>({x:sm[i].x*0.5+q.x*0.5,y:sm[i].y*0.5+q.y*0.5,visibility:q.visibility}));}
     sm=p.map(q=>({x:q.x,y:q.y}));
     const hipY=(p[23].y+p[24].y)/2,sy=(p[11].y+p[12].y)/2;
@@ -2195,7 +2195,7 @@ function chime(kind){
     let mv=0,mvW=0;
     if(prev){const dt=(performance.now()-prev.t)/1000;if(dt>0){let sum=0,sw=0;for(const i of PTS){const d=Math.hypot(p[i].x-prev.p[i].x,p[i].y-prev.p[i].y);sum+=d;if(i===15||i===16)sw+=d;}mv=Math.max(sum/PTS.length/h/dt,sw/2/h/dt*0.5);mvW=sw/2/h/dt;}}
     prev={p:p.map(q=>({x:q.x,y:q.y})),t:performance.now()};
-    const addr=p[15].y>sy-0.02*h&&p[16].y>sy-0.02*h&&Math.hypot(p[15].x-p[16].x,p[15].y-p[16].y)<0.75*h;
+    const addr=p[15].y>sy-0.1*h&&p[16].y>sy-0.1*h&&Math.hypot(p[15].x-p[16].x,p[15].y-p[16].y)<1.0*h;
     mvH.push(mv);if(mvH.length>3)mvH.shift();const mvA=mvH.reduce((x,y)=>x+y,0)/mvH.length;
     const tf=Math.min(2.2,Math.max(1,1+(0.18-torso)/0.1));   // 사람이 작을수록 흔들림 허용치를 키움
     return {mv:Math.min(mv,mvA*1.0+0*mv),mvRaw:mv,mvW,addr,h,tf};
@@ -2249,10 +2249,10 @@ function chime(kind){
       else if(a.far){prev=null;stillN=0;say('🏌️ 자동 대기 · 조금 더 가까이 서 주세요');}
       else{
         noPersonN=0;
-        if(a.addr&&a.mv<0.9*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,3)+'/3',true);}
-        else if(a.addr&&stillN>0&&a.mv<1.4*a.tf){/* 잠깐의 흔들림은 무시 */}
+        if(a.addr&&a.mv<1.5*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,2)+'/2',true);}
+        else if(a.addr&&stillN>0&&a.mv<2.4*a.tf){/* 잠깐의 흔들림은 무시 */}
         else{stillN=0;say(a.addr?'🏌️ 자동 대기 · 움직임이 있어요 (정지해 주세요)':'🏌️ 자동 대기 · 어드레스 자세로 서 주세요');}
-        if(stillN>=3){
+        if(stillN>=2){
           phase='rec';swingSeen=false;stillSince=0;S.autoRec=true;S.autoDiscard=false;
           say('● 준비 완료 · 스윙하세요',true);pushState();snd('ready');
           S.recording=true;recT0=performance.now()+500;
@@ -2260,7 +2260,7 @@ function chime(kind){
           setTimeout(()=>{if(S.recording&&phase==='rec')doStart(S.autoDur);},500);   // 알림음이 녹음에 섞이지 않도록 살짝 뒤에 시작
         }
       }
-      pushState();loopH=setTimeout(loop,100);return;
+      pushState();loopH=setTimeout(loop,80);return;
     }
     if(phase==='rec'){
       if(!S.recording){   // 설정한 시간이 끝나서 녹화가 자동으로 멈춤
