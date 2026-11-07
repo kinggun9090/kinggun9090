@@ -374,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v59</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v60</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -1691,7 +1691,16 @@ function initCamTools(){
   const front=S.facing==='user';
   document.querySelectorAll('#zoomRow .chip').forEach(b=>{const z=+b.dataset.z;b.style.display=(front&&z<1)?'':((S.hwZoom&&(z<S.zoomMin-0.01||z>S.zoomMax+0.01))?'none':'');});
   S.swScale=1;$('#preview').style.transform='';
-  S.zoom=(S.lens==='ultra'&&!S.hwZoom)?0.5:1;S.zCur=S.zTarget=S.zoom;S.zAnim=false;S.zHW=false;S.zPend=null;
+  S.zoom=(S.lens==='ultra'&&!S.hwZoom)?0.5:1;
+  // 촬영·분석 후 카메라를 다시 열어도 직전 줌을 그대로 유지
+  const k=S.zoomKeep;
+  if(k&&k.f===S.facing&&k.z>0){let z=k.z;
+    if(z<1&&!S.hwZoom&&S.lens!=='ultra')z=1;
+    z=Math.max(S.hwZoom?S.zoomMin:(S.lens==='ultra'?0.5:1),Math.min(S.zoomMax,z));
+    if(front&&z<1)z=1;
+    S.zoom=z;}
+  S.zCur=S.zTarget=S.zoom;S.zAnim=false;S.zHW=false;S.zPend=null;
+  if(S.zoom!==1)zoomApply(S.zoom);
   paintZoom(S.zoom);
   sendZoom();
 }
@@ -1749,7 +1758,7 @@ async function setZoom(z){
     }else if(z<1)z=1;
     z=Math.max(z,S.lens==='ultra'?0.5:1);
   }
-  S.zoom=z;S.zTarget=z;
+  S.zoom=z;S.zTarget=z;S.zoomKeep={f:S.facing,z};
   if(!S.zAnim){S.zAnim=true;if(!(S.zCur>0))S.zCur=1;requestAnimationFrame(zoomLoop);}
 }
 document.querySelectorAll('#zoomRow .chip').forEach(b=>b.onclick=async()=>{
@@ -2186,7 +2195,7 @@ function chime(kind){
     let mv=0,mvW=0;
     if(prev){const dt=(performance.now()-prev.t)/1000;if(dt>0){let sum=0,sw=0;for(const i of PTS){const d=Math.hypot(p[i].x-prev.p[i].x,p[i].y-prev.p[i].y);sum+=d;if(i===15||i===16)sw+=d;}mv=Math.max(sum/PTS.length/h/dt,sw/2/h/dt*0.5);mvW=sw/2/h/dt;}}
     prev={p:p.map(q=>({x:q.x,y:q.y})),t:performance.now()};
-    const addr=p[15].y>sy+0.04*h&&p[16].y>sy+0.04*h&&Math.hypot(p[15].x-p[16].x,p[15].y-p[16].y)<0.5*h;
+    const addr=p[15].y>sy-0.02*h&&p[16].y>sy-0.02*h&&Math.hypot(p[15].x-p[16].x,p[15].y-p[16].y)<0.75*h;
     mvH.push(mv);if(mvH.length>3)mvH.shift();const mvA=mvH.reduce((x,y)=>x+y,0)/mvH.length;
     const tf=Math.min(2.2,Math.max(1,1+(0.18-torso)/0.1));   // 사람이 작을수록 흔들림 허용치를 키움
     return {mv:Math.min(mv,mvA*1.0+0*mv),mvRaw:mv,mvW,addr,h,tf};
@@ -2240,9 +2249,10 @@ function chime(kind){
       else if(a.far){prev=null;stillN=0;say('🏌️ 자동 대기 · 조금 더 가까이 서 주세요');}
       else{
         noPersonN=0;
-        if(a.addr&&a.mv<0.5*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,4)+'/4',true);}
+        if(a.addr&&a.mv<0.9*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,3)+'/3',true);}
+        else if(a.addr&&stillN>0&&a.mv<1.4*a.tf){/* 잠깐의 흔들림은 무시 */}
         else{stillN=0;say(a.addr?'🏌️ 자동 대기 · 움직임이 있어요 (정지해 주세요)':'🏌️ 자동 대기 · 어드레스 자세로 서 주세요');}
-        if(stillN>=4){
+        if(stillN>=3){
           phase='rec';swingSeen=false;stillSince=0;S.autoRec=true;S.autoDiscard=false;
           say('● 준비 완료 · 스윙하세요',true);pushState();snd('ready');
           S.recording=true;recT0=performance.now()+500;
@@ -2250,7 +2260,7 @@ function chime(kind){
           setTimeout(()=>{if(S.recording&&phase==='rec')doStart(S.autoDur);},500);   // 알림음이 녹음에 섞이지 않도록 살짝 뒤에 시작
         }
       }
-      pushState();loopH=setTimeout(loop,120);return;
+      pushState();loopH=setTimeout(loop,100);return;
     }
     if(phase==='rec'){
       if(!S.recording){   // 설정한 시간이 끝나서 녹화가 자동으로 멈춤
