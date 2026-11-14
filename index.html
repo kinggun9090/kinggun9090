@@ -375,7 +375,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 홈 -->
 <section id="home" class="screen active">
-  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v67</div>
+  <div id="verTag" style="position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 6px);font-size:10px;color:var(--dim);opacity:.6;z-index:5">v68</div>
   <h1 style="letter-spacing:3px;font-weight:700"><span style="color:var(--acc)">SWING</span>LAB</h1>
   <p class="sub">A폰은 촬영만, B폰은 트랙맨처럼 스윙 결과를 확인하는 화면이 됩니다.</p>
   <div class="tips" id="a2hs" style="display:none;margin-top:0">💡 <b>주소창 없이 전체화면으로 쓰려면</b><br>사파리 하단 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 SwingLab 아이콘으로 실행하세요. 위·아래 바가 사라져요.</div>
@@ -523,6 +523,7 @@ select{-webkit-appearance:none;appearance:none;background-color:var(--card);back
 
 <!-- 리뷰 (스윙 모니터) -->
 <section id="review" class="screen">
+  <button id="retCancel" style="display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 52px);z-index:40;background:rgba(0,0,0,.72);color:#ffd400;border:1px solid #ffd400;border-radius:18px;padding:7px 14px;font-size:12px;font-weight:700">↩ 1회 재생 후 촬영으로 복귀 · 취소</button>
   <div class="bar">
     <button class="chip sm" id="rBack">← 대기</button>
     <h2 id="rTitle">SWING</h2>
@@ -1228,7 +1229,7 @@ async function openReview(a,b,opts={}){
   $('#bRecAgain').textContent=S.role==='view'?'● 다시 촬영 (A폰)':'● 다시 촬영';
   $('#bToLive').style.display=(S.role==='view'&&connected())?'inline-block':'none';
   $('#rBack').textContent=S.role==='view'?'← 라이브':(S.savedMode?'← 목록':'← 홈');
-  S.autoReturn=!!opts.fresh;if(S.autoReturn)toast('분석 후 1회 재생하고 촬영 화면으로 돌아가요 (화면을 누르면 취소)',3500);
+  S.autoReturn=!!opts.fresh;S.retT0=performance.now();S.retPlayT=0;$('#retCancel').style.display=S.autoReturn?'block':'none';
   speed=1;document.querySelectorAll('[data-sp]').forEach(x=>x.classList.toggle('on',+x.dataset.sp===1));setCompare(!!opts.compare||(cmpPref()&&!!b));
   playing=false;$('#bPlay').textContent='▶';T=0;align=0;$('#res').innerHTML='';
   $('#rTitle').textContent=a&&a.n?`SWING #${a.n}`:'SWING ANALYSIS';
@@ -1558,7 +1559,7 @@ async function runAnalysis(force,auto){
   analyzing=false;btn.disabled=false;btn.textContent='🧠 자세 분석 다시 실행';
 }
 async function doReturn(){
-  if(!S.autoReturn)return;S.autoReturn=false;
+  if(!S.autoReturn)return;S.autoReturn=false;$('#retCancel').style.display='none';
   if(!$('#review').classList.contains('active'))return;
   setPlaying(false);
   if(S.role==='view'&&connected()&&!S.savedMode){goLive();return;}
@@ -1569,9 +1570,14 @@ async function doReturn(){
 }
 let retIdle=0;
 setInterval(()=>{   // 재생이 끝났는데 복귀가 안 되는 경우를 막는 안전장치
-  if(S.autoReturn&&$('#review').classList.contains('active')&&!playing&&!analyzing){if(++retIdle>=6){retIdle=0;doReturn();}}else retIdle=0;
+  if(!S.autoReturn||!$('#review').classList.contains('active')){retIdle=0;return;}
+  const now=performance.now();
+  if(playing&&!S.retPlayT)S.retPlayT=now;
+  // 재생이 시작된 뒤 (영상 길이 + 4초)가 지나거나, 전체 60초가 넘으면 무조건 복귀
+  if((S.retPlayT&&now-S.retPlayT>(Tmax()/Math.max(speed,0.25)+4)*1000)||now-S.retT0>(analyzing?150000:60000)){doReturn();return;}
+  if(!playing&&!analyzing){if(++retIdle>=6){retIdle=0;doReturn();}}else retIdle=0;
 },500);
-$('#review').addEventListener('pointerdown',()=>{if(S.autoReturn){S.autoReturn=false;toast('자동 복귀를 취소했어요',1500);}},true);
+$('#retCancel').onclick=()=>{S.autoReturn=false;$('#retCancel').style.display='none';toast('자동 복귀를 취소했어요',1500);};
 $('#bAnalyze').onclick=()=>{
   if(!SL.A.clip&&!SL.B.clip){toast('영상을 먼저 선택하세요');return;}
   runAnalysis(true,false);
@@ -2205,7 +2211,10 @@ function chime(kind){
   const okP=(q,vis)=>q&&(q.visibility==null||q.visibility>=vis);
   let sm=null,mvH=[];
   function analyze(p){
-    const vis=(i,t)=>okP(p[i],t==null?Math.max(0.45,(SENS[sens]||SENS[3]).v):t);
+    const VT=Math.max(0.3,(SENS[sens]||SENS[3]).v);
+    // 옆에서 찍으면 반대쪽 어깨·엉덩이가 가려짐 → 보이는 쪽으로 대신함
+    p=p.slice();for(const [l,r] of [[11,12],[23,24]]){const a=okP(p[l],VT),b=okP(p[r],VT);if(a&&!b)p[r]=p[l];else if(b&&!a)p[l]=p[r];}
+    const vis=(i,t)=>okP(p[i],t==null?VT:t);
     for(const i of [11,12,23,24]){if(!vis(i))return null;}          // 어깨·엉덩이만 보이면 인식 (손목·코는 가려져도 허용)
     const hipY=(p[23].y+p[24].y)/2,sy=(p[11].y+p[12].y)/2;
     const noseY=vis(0)?p[0].y:sy-0.45*(hipY-sy);
@@ -2279,12 +2288,13 @@ function chime(kind){
   async function presence(){
     if(pBusy||performance.now()-pLast<350)return;pBusy=true;pLast=performance.now();
     try{const lmk=await getLM();const v=$('#preview');if(v.videoWidth&&v.readyState>=2){const r=detectFrame(lmk,v),q=r&&r.p;
-      if(q&&[11,12,23,24].every(i=>q[i]&&(q[i].visibility==null||q[i].visibility>=0.5))){
+      const okv=i=>q[i]&&(q[i].visibility==null||q[i].visibility>=0.3);
+      if(q&&(okv(11)||okv(12))&&(okv(23)||okv(24))){if(!okv(11))q[11]=q[12];if(!okv(12))q[12]=q[11];if(!okv(23))q[23]=q[24];if(!okv(24))q[24]=q[23];
         const xs=[11,12,23,24].map(i=>q[i].x),x0=Math.min(...xs),x1=Math.max(...xs),w=Math.max(0.05,x1-x0),zcx=zone?zone.x+zone.w/2:0.5;
         const hy=(q[23].y+q[24].y)/2,sy=(q[11].y+q[12].y)/2;
-        if(hy-sy>=0.03&&zcx>x0-w*1.5-0.1&&zcx<x1+w*1.5+0.1){pT=performance.now();
+        if(hy-sy>=0.03&&zcx>x0-w*2.5-0.2&&zcx<x1+w*2.5+0.2){pT=performance.now();
           const had=!!prev,a=analyze(q);
-          if(a&&!a.far){bMv=a.mvRaw;bLim=[0.06,0.08,0.11,0.15][sens]*a.tf;if(!had)bStill=0;else if(a.mvRaw<bLim)bStill++;else bStill=0;}else bStill=0;}
+          if(a&&!a.far){bMv=a.mvRaw;bLim=[0.12,0.18,0.26,0.4][sens]*a.tf;if(!had)bStill=0;else if(a.mvRaw<bLim)bStill++;else bStill=0;}else bStill=0;}
         else bStill=0;}else{bStill=0;prev=null;sm=null;}}}catch(e){}
     pBusy=false;
   }
@@ -2331,10 +2341,11 @@ function chime(kind){
     if(phase==='wait'){
       if(d==null)return 120;
       presence();
-      if(performance.now()-pT>2000){zStill=0;zSeenMove=false;say('⛳ 골프채 고정 대기 · 사람이 인식되지 않아요 (골프채 옆에 서 주세요)');pushState();return 100;}
+      if(performance.now()-pT>3500){zStill=0;zSeenMove=false;say('⛳ 골프채 고정 대기 · 사람이 인식되지 않아요 (골프채 옆에 서 주세요)');pushState();return 100;}
       const dbg=' · 변화 '+d.toFixed(1);
       const bd=' · 몸 '+bMv.toFixed(2)+'/'+bLim.toFixed(2);
-      if(d>MV){zSeenMove=true;zStill=0;say('⛳ 골프채 고정 · 클럽을 놓고 정지하세요'+dbg);}
+      if(d>SV*1.6)zSeenMove=true;
+      if(d>MV){zStill=0;say('⛳ 골프채 고정 · 클럽을 놓고 정지하세요'+dbg);}
       else if(d<SV&&zSeenMove){zStill++;
         if(zStill>=N&&bStill>=2){zReset();beginAutoRec();}
         else if(zStill>=N)say('⛳ 헤드 고정 ✓ · 몸을 정지해 주세요'+bd);
@@ -2372,7 +2383,7 @@ function chime(kind){
         if(a.addr&&a.mv<SV.m*a.tf){stillN++;say('⛳ 어드레스 인식 중… '+Math.min(stillN,SV.n)+'/'+SV.n+dbg,true);}
         else if(a.addr&&stillN>0&&a.mv<SV.m*1.6*a.tf){/* 잠깐의 흔들림은 무시 */}
         else{stillN=0;say((a.addr?'🏌️ 자동 대기 · 움직임이 있어요 (정지해 주세요)':'🏌️ 자동 대기 · 어드레스 자세로 서 주세요')+dbg);}
-        if(personN>=4&&(stillN>=SV.n||stillAny>=SV.any)){
+        if(personN>=3&&(stillN>=SV.n||stillAny>=SV.any)){
           beginAutoRec();
         }
       }
